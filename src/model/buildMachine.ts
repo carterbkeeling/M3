@@ -54,7 +54,7 @@ export function buildMachine(cfg: MachineConfig): Machine {
   const stroke = buildAccentStroke(cfg, strokePath, L.zFront, materials)
   root.add(stroke.group)
 
-  const reader = buildReader(strokePath.reader.x, strokePath.reader.y, L.zFront, materials)
+  const reader = buildReader(strokePath.reader, L.zFront, materials)
   root.add(reader.group)
 
   // Modules fill slots row-major; extras beyond the slot count are ignored.

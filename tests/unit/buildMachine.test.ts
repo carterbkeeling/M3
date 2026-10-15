@@ -80,6 +80,39 @@ describe('accent stroke', () => {
   }
 })
 
+describe('reader on the spine', () => {
+  for (const grid of grids) {
+    it(`${grid.cols}×${grid.rows}: reader sits mid-spine, its ring stays in the lane and clear of every light`, () => {
+      const cfg = variant({ grid })
+      const L = layout(cfg)
+      const sp = buildStrokePath(cfg, L)
+      expect(sp.reader.kind).toBe('capsule')
+      expect(sp.ring).not.toBeNull()
+      const laneWidth = grid.cols > 1 ? cfg.cabinet.mullion : cfg.cabinet.side
+      for (const [x] of sp.ring!) expect(Math.abs(x - sp.reader.x) + cfg.stroke.width / 2).toBeLessThanOrEqual(laneWidth / 2 - 0.004)
+      for (const piece of sp.pieces) {
+        if (piece.slot === null) continue
+        for (const [x, y] of piece.points) {
+          const nearest = Math.min(...sp.ring!.map(([rx, ry]) => Math.hypot(rx - x, ry - y)))
+          expect(nearest).toBeGreaterThan(cfg.stroke.width + 0.004)
+        }
+      }
+    })
+  }
+
+  it('default 2×6: reader is within the 15–48 in reach range', () => {
+    const sp = buildStrokePath(config, layout(config))
+    const inches = sp.reader.y / 0.0254
+    expect(inches).toBeGreaterThanOrEqual(15)
+    expect(inches).toBeLessThanOrEqual(48)
+  })
+
+  it('the stretch under the reader pad is hidden, and the path stays continuous through it', () => {
+    const sp = buildStrokePath(config, layout(config))
+    expect(sp.pieces.filter((p) => p.hidden).length).toBe(1)
+  })
+})
+
 describe('buildMachine', () => {
   it('builds the default machine with 12 modules, 12 lights and 12 placards', () => {
     const m = buildMachine(config)

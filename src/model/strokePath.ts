@@ -2,20 +2,37 @@ import type { MachineConfig } from './config.ts'
 import type { Layout } from './dims.ts'
 
 // The accent stroke: one continuous path on the bezel face, uniform width, constant-radius turns.
-// It starts as a loop around the reader, then routes across the front. Every slot owns exactly
-// one stretch of it (its status light). Pure 2D math in the bezel plane (x right, y up).
+// Every slot owns exactly one stretch of it (its status light). Pure 2D math in the bezel plane
+// (x right, y up).
+//
+// Spine (default): the stroke runs from the top of the header down the center mullion with one
+// compact S per row. The reader sits in the middle of the spine, at reachable height, inside a lit
+// capsule ring; the stroke flows into the ring above the reader and out of it below (the stretch
+// under the reader pad is hidden). Serpentine: the stroke starts as a loop around a header reader.
 
 export interface StrokePiece {
   slot: number | null // slot index that owns this stretch, or null for connecting stroke
+  hidden?: boolean // runs under the reader pad: part of the path, not rendered
   points: Array<[number, number]>
+}
+
+export interface ReaderPlacement {
+  kind: 'capsule' | 'circle'
+  x: number
+  y: number
+  padR: number // pad corner radius (capsule) or radius (circle)
+  straight: number // capsule straight length (0 for a circle)
+  loopR: number // radius of the light ring around the pad
 }
 
 export interface StrokePath {
   pieces: StrokePiece[]
-  reader: { x: number; y: number; loopR: number }
+  ring: Array<[number, number]> | null // closed light ring around a capsule reader
+  reader: ReaderPlacement
 }
 
 type Vec = [number, number]
+const HIDDEN = -1
 
 class Turtle {
   x: number
@@ -89,7 +106,7 @@ class Turtle {
 
   finish(): StrokePiece[] {
     if (this.current.points.length > 1) this.pieces.push(this.current)
-    return this.pieces
+    return this.pieces.map((p) => (p.slot === HIDDEN ? { slot: null, hidden: true, points: p.points } : p))
   }
 }
 
@@ -103,7 +120,7 @@ interface Segment {
   features: Feature[]
 }
 
-// Follow an axis-aligned route, filleting every corner with radius r and applying features.
+// Follow an axis-aligned route, filleting every real corner with radius r and applying features.
 function follow(t: Turtle, start: Vec, segments: Segment[], r: number) {
   // Turn direction at each joint (0 = collinear, no turn and no trim).
   const starts: Vec[] = [start, ...segments.slice(0, -1).map((s) => s.to)]
@@ -141,31 +158,10 @@ function follow(t: Turtle, start: Vec, segments: Segment[], r: number) {
 }
 
 export function buildStrokePath(cfg: MachineConfig, L: Layout): StrokePath {
-  const r = cfg.stroke.turnRadius
-  // Reader sits high in the header so both the loop and the route under it fit. For the spine it
-  // sits so the loop's left tangent lands on the first mullion: the stroke leaves the loop and
-  // drops straight down the spine with no jog.
-  const loopR = 0.04
-  const onMullion = cfg.stroke.path === 'spine' && cfg.grid.cols > 1
-  const reader = { x: onMullion ? L.mullionX[0] + loopR : 0, y: L.H - 0.065, loopR }
-
-  // Start on the loop just past its lowest-left point, run CCW once around the reader,
-  // and leave heading straight down from its left side.
-  const a0 = (230 * Math.PI) / 180
-  const sx = reader.x + Math.cos(a0) * loopR
-  const sy = reader.y + Math.sin(a0) * loopR
-  const t = new Turtle(sx, sy, a0 + Math.PI / 2)
-  t.arc((540 * Math.PI) / 180 - a0, loopR)
-  const exit: Vec = [reader.x - loopR, reader.y] // snap away arc sampling error so lanes line up exactly
-  t.x = exit[0]
-  t.y = exit[1]
-
-  const segments = cfg.stroke.path === 'serpentine' ? serpentineRoute(cfg, L, exit) : spineRoute(cfg, L, exit)
-  follow(t, exit, segments, r)
-  return { pieces: t.finish(), reader }
+  return cfg.stroke.path === 'serpentine' ? serpentinePath(cfg, L) : spinePath(cfg, L)
 }
 
-// Height of the route that runs under the reader loop, and of the run along the lower frame.
+// Height of the route that runs along the header, and of the run along the lower frame.
 function headY(L: Layout) {
   return L.slotTop + 0.036
 }
@@ -173,39 +169,61 @@ function baseY(L: Layout) {
   return (L.skinBottom + 0.014 + L.slots[L.slots.length - 1].bottom) / 2
 }
 
-// Spine: down each mullion (or the left side frame for one column), one lobe per slot,
-// lanes linked alternately across the base and the header.
-function spineRoute(cfg: MachineConfig, L: Layout, exit: Vec): Segment[] {
+// Closed stadium (capsule) outline, CCW, around (cx, cy).
+function capsule(cx: number, cy: number, R: number, straight: number, step = Math.PI / 36): Vec[] {
+  const a = straight / 2
+  const pts: Vec[] = []
+  for (let y = cy - a; y < cy + a; y += 0.004) pts.push([cx + R, y])
+  for (let t = 0; t < Math.PI; t += step) pts.push([cx + Math.cos(t) * R, cy + a + Math.sin(t) * R])
+  for (let y = cy + a; y > cy - a; y -= 0.004) pts.push([cx - R, y])
+  for (let t = Math.PI; t < 2 * Math.PI; t += step) pts.push([cx + Math.cos(t) * R, cy - a + Math.sin(t) * R])
+  return pts
+}
+
+// Spine: down each mullion (or the left side frame for one column), one compact S per row,
+// lanes linked alternately across the base and the header; the reader sits mid-spine.
+function spinePath(cfg: MachineConfig, L: Layout): StrokePath {
   const { cols, rows } = cfg.grid
   const r = cfg.stroke.turnRadius
+  const half = cfg.stroke.width / 2
   const lanes = cols > 1 ? L.mullionX : [L.sideX[0]]
   const laneWidth = cols > 1 ? cfg.cabinet.mullion : cfg.cabinet.side
   // Lobe depth: as deep as the lane allows while keeping 7 mm clear of the door gaps. At 2r every
   // turn is a true quarter arc; narrower lanes fall back to straight owned stretches, never kinks.
-  const amp = Math.min(2 * r, laneWidth / 2 - cfg.stroke.width / 2 - 0.007)
+  const amp = Math.min(2 * r, laneWidth / 2 - half - 0.007)
   const lobes = amp >= 2 * r - 1e-9
-  const lobeRun = 4 * r // length of travel one quarter-arc lobe takes, with no hold
+  const lobeRun = 4 * r
+  const yTop = L.H - 0.035
   const yHead = headY(L)
   const yBase = baseY(L)
-  const segs: Segment[] = [{ to: [exit[0], yHead], features: [] }]
-  if (Math.abs(lanes[0] - exit[0]) > 1e-6) segs.push({ to: [lanes[0], yHead], features: [] })
 
-  lanes.forEach((x, k) => {
-    const down = k % 2 === 0
-    const yFrom = down ? yHead : yBase
+  // Reader: on the first lane, centered on the rail nearest the grid's mid-height (≈ 35 in on the
+  // default 2×6, inside the 15–48 in reach range). A capsule fits the narrow lane.
+  const lane0 = lanes[0]
+  const k = Math.max(0, Math.round(rows / 2) - 1)
+  const yc = rows > 1 ? L.slots[k * cols].bottom - cfg.cabinet.rail / 2 : (L.slotTop + yBase) / 2
+  const loopR = Math.max(0.01, Math.min(0.026, laneWidth / 2 - half - 0.005))
+  const straight = 0.06
+  const capHalf = straight / 2 + loopR
+  const reader: ReaderPlacement = { kind: 'capsule', x: lane0, y: yc, padR: Math.max(0.004, loopR - half - 0.004), straight, loopR }
+
+  const segs: Segment[] = []
+  lanes.forEach((x, li) => {
+    const down = li % 2 === 0
+    const yFrom = li === 0 ? yTop : down ? yHead : yBase
     const yTo = down ? yBase : yHead
     const sOf = (y: number) => Math.abs(y - yFrom)
     const features: Feature[] = []
     const hasLeft = cols > 1
-    const hasRight = cols === 1 || k === lanes.length - 1
-    const place = (yc: number, len: number, slot: number, toward: Vec) => {
-      if (lobes) features.push({ kind: 'lobe', s0: sOf(yc) - len / 2, length: len, slot, toward, amp })
-      else features.push({ kind: 'own', s0: sOf(yc) - len / 2, s1: sOf(yc) + len / 2, slot })
+    const hasRight = cols === 1 || li === lanes.length - 1
+    const place = (yc2: number, len: number, slot: number, toward: Vec) => {
+      if (lobes) features.push({ kind: 'lobe', s0: sOf(yc2) - len / 2, length: len, slot, toward, amp })
+      else features.push({ kind: 'own', s0: sOf(yc2) - len / 2, s1: sOf(yc2) + len / 2, slot })
     }
     for (let row = 0; row < rows; row++) {
       const s0 = L.slots[row * cols]
-      const leftSlot = row * cols + k
-      const rightSlot = cols === 1 ? row * cols : row * cols + k + 1
+      const leftSlot = row * cols + li
+      const rightSlot = cols === 1 ? row * cols : row * cols + li + 1
       if (hasLeft && hasRight) {
         // One compact S per row at the row's center: upper lobe → left door, lower → right door.
         const len = lobes ? lobeRun : 0.07
@@ -217,8 +235,10 @@ function spineRoute(cfg: MachineConfig, L: Layout, exit: Vec): Segment[] {
         place(s0.y, lobes ? lobeRun : 0.12, rightSlot, [1, 0])
       }
     }
+    // Under the reader pad the stroke is hidden: it flows into the ring above and out below.
+    if (li === 0) features.push({ kind: 'own', s0: sOf(yc + capHalf), s1: sOf(yc - capHalf), slot: HIDDEN })
     segs.push({ to: [x, yTo], features })
-    const next = lanes[k + 1]
+    const next = lanes[li + 1]
     if (next !== undefined) segs.push({ to: [next, yTo], features: [] })
   })
   // With an even number of lanes the last one ends heading up into the header: finish by
@@ -226,13 +246,30 @@ function spineRoute(cfg: MachineConfig, L: Layout, exit: Vec): Segment[] {
   if (lanes.length % 2 === 0 && lanes.length > 1) {
     segs.push({ to: [L.sideX[1] - 2 * r, yHead], features: [] })
   }
-  return segs
+
+  const t = new Turtle(lane0, yTop, -Math.PI / 2)
+  follow(t, [lane0, yTop], segs, r)
+  return { pieces: t.finish(), ring: capsule(lane0, yc, loopR, straight), reader }
 }
 
-// Serpentine ("rail serpentine"): boustrophedon along the rail above each row; each slot owns
-// the run above it. It does not loop around each door.
-function serpentineRoute(cfg: MachineConfig, L: Layout, exit: Vec): Segment[] {
+// Serpentine ("rail serpentine"): starts as a loop around a header reader, then runs a
+// boustrophedon along the rail above each row; each slot owns the run above it.
+// It does not loop around each door.
+function serpentinePath(cfg: MachineConfig, L: Layout): StrokePath {
   const { cols, rows } = cfg.grid
+  const r = cfg.stroke.turnRadius
+  const loopR = 0.04
+  const reader: ReaderPlacement = { kind: 'circle', x: 0, y: L.H - 0.065, padR: 0.03, straight: 0, loopR }
+
+  // Start on the loop just past its lowest-left point, run CCW once around the reader,
+  // and leave heading straight down from its left side.
+  const a0 = (230 * Math.PI) / 180
+  const t = new Turtle(reader.x + Math.cos(a0) * loopR, reader.y + Math.sin(a0) * loopR, a0 + Math.PI / 2)
+  t.arc((540 * Math.PI) / 180 - a0, loopR)
+  const exit: Vec = [reader.x - loopR, reader.y] // snap away arc sampling error
+  t.x = exit[0]
+  t.y = exit[1]
+
   const [xL, xR] = L.sideX
   const yHead = headY(L)
   const segs: Segment[] = [
@@ -245,8 +282,7 @@ function serpentineRoute(cfg: MachineConfig, L: Layout, exit: Vec): Segment[] {
     const eastward = row % 2 === 0
     const xFrom = eastward ? xL : xR
     const xTo = eastward ? xR : xL
-    // vertical connector down the side frame to this run
-    segs.push({ to: [xFrom, y], features: [] })
+    segs.push({ to: [xFrom, y], features: [] }) // down the side frame to this run
     const features: Feature[] = []
     for (let col = 0; col < cols; col++) {
       const slot = L.slots[row * cols + col]
@@ -257,5 +293,6 @@ function serpentineRoute(cfg: MachineConfig, L: Layout, exit: Vec): Segment[] {
     }
     segs.push({ to: [xTo, y], features })
   }
-  return segs
+  follow(t, exit, segs, r)
+  return { pieces: t.finish(), ring: null, reader }
 }

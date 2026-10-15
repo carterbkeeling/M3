@@ -40,6 +40,19 @@ Your answers from the Phase 0 interview. "(default)" means you accepted the brie
 | H | Publishing | **Commit locally at every checkpoint, and push to GitHub only after final (Phase 3) approval** or when you say. |
 | I | Reference study | One pass done in the browser pane during Phase 0. A full Playwright capture of landonorris.com happens at the start of Phase 1 and is kept in an **uncommitted** `reference/` folder. |
 
+### Phase 1 checkpoint decisions (2026-10-15)
+These supersede anything above or below that conflicts.
+
+| # | Decision | Answer |
+|---|---|---|
+| P1 | Proportions | **Approved as built:** ≈ 72 × 39 × 35 in (1.828 × 0.99 × 0.89 m). Header 17 cm, plinth 10 cm, 2 × 6 slots with 41.0 × 24.3 cm openings, a **70 mm center mullion** (it carries the light-pipe spine), 50 mm side frames, 20 mm rails. |
+| P2 | Door style | **A · side-hinged (left).** The door sits nearly flush (6 mm proud), with molded knuckles tucked inside its outline and a **molded stadium finger pocket** at the free edge. No exterior lock or key face: the **latch is on the inside face** and is visible only when the door is open. Style B (drop-down, recessed lip) is retained in code as an option only. |
+| P3 | Curve language / stroke | **Spine.** One stroke down the center mullion with one compact S per row: the upper lobe is the left door's light and the lower lobe is the right door's. The rail serpentine is retained in code as an option only, with its header reader. |
+| P4 | Reader placement | **Mid-spine, not in the header** (your direction). A capsule tap pad (≈ 36 × 96 mm) sits on the center mullion at the rail nearest the grid's mid-height (≈ 35 in on the default 2 × 6, inside the 15–48 in reach range). It is ringed by its own light ring, and the stroke flows into the ring above and out below; the stretch under the pad is hidden. The header carries only the start of the stroke (candidate home for the molded m³ mark; to propose in Phase 2). |
+| P5 | Colorway | **Graphite Matte** (body #2A2C31, doors one step lighter). |
+| P6 | Wordmark | **Slot** (`src/brand/wordmark.ts` → `wordmark`). A square m with one radius throughout and a superscript ³. Its loader draws the m, then the ³ (one pen lift). This differs from the brief's "draws itself as a single stroke"; you accepted it by choosing Slot. |
+| P7 | Light states | Brightness only (one accent): dim = no module, steady = plugged in, bright = unlocked. The reader ring is its own light (it pulses on a tap in the unlock scene). |
+
 ---
 
 ## Assumptions

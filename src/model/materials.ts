@@ -21,7 +21,7 @@ export interface MachineMaterials {
   pipeSegment: () => THREE.MeshStandardMaterial // one per slot, so each light can change on its own
 }
 
-export const pipeIntensity = { none: 0.07, plugged: 0.75, unlocked: 1.6, connector: 0.4 }
+export const pipeIntensity = { none: 0.07, plugged: 0.75, unlocked: 1.6, connector: 0.4, reader: 0.9 }
 
 export function createMaterials(id: ColorwayId): MachineMaterials {
   const c = colorways[id]
@@ -42,7 +42,7 @@ export function createMaterials(id: ColorwayId): MachineMaterials {
     lock: std('#55585F', 0.55),
     feet: std('#111214', 0.95),
     reader: std('#1C1D21', 0.55),
-    readerRing: std('#6B6E76', 0.4, { emissive: new THREE.Color(accent.pipe), emissiveIntensity: 0.08 }),
+    readerRing: pipe(pipeIntensity.reader), // the light ring around the reader; pulses on a tap
     carton: std('#8A8378', 0.95),
     pipeConnector: pipe(pipeIntensity.connector),
     pipeSegment: () => pipe(pipeIntensity.plugged),

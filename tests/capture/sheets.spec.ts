@@ -71,7 +71,7 @@ const sheets: Sheet[] = [
     cells: [
       ['15-stroke-spine-front.jpg', 'Spine (recommended) · one S per row, upper lobe = left door, lower = right'],
       ['16-stroke-serpentine-front.jpg', 'Rail serpentine · each slot owns the run above it (runs sit between rows)'],
-      ['17-stroke-spine-header-detail.jpg', 'Spine · leaves the reader loop straight down the mullion'],
+      ['17-stroke-spine-reader-detail.jpg', 'Spine · reader mid-spine (~35 in), stroke flows into its ring and out'],
       ['18-stroke-serpentine-header-detail.jpg', 'Serpentine · reader loop'],
       ['19-light-states-front.jpg', 'Light states · 2 slots empty (dim), 1 unlocked (bright), rest plugged in'],
       ['19b-light-states-detail.jpg', 'Light states · detail'],

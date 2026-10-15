@@ -204,6 +204,9 @@ const slot: WordmarkCandidate = {
 /** All Phase 1 candidates, in presentation order. */
 export const wordmarks: readonly WordmarkCandidate[] = [twinArch, wormFlow, slot]
 
+/** The approved m³ mark (Phase 1 checkpoint, 2026-10-15): Slot. Its loader draws the m, then the ³. */
+export const wordmark: WordmarkCandidate = slot
+
 /** Accessible name for the mark wherever it stands in for the brand name. */
 export const WORDMARK_LABEL = 'm³ (M-cubed)'
 

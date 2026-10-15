@@ -28,7 +28,7 @@ const grid = params.get('grid')?.match(/^(\d+)x(\d+)$/)
 if (grid) cfg.grid = { cols: Number(grid[1]), rows: Number(grid[2]) }
 const modulesMode = pick('modules', ['all', 'one', 'none'] as const, 'all')
 const state = pick('state', ['closed', 'open', 'pulled', 'removed'] as const, 'closed')
-const view = pick('view', ['front', 'threequarter', 'threequarterleft', 'side', 'back', 'ortho', 'detail'] as const, 'threequarter')
+const view = pick('view', ['front', 'threequarter', 'threequarterleft', 'side', 'back', 'ortho', 'detail', 'reader'] as const, 'threequarter')
 const showScale = params.get('scale') === '1'
 const demoLights = params.get('lights') === 'demo'
 const bg = pick('bg', ['dark', 'light'] as const, 'dark')
@@ -159,8 +159,13 @@ const dir = {
   back: new THREE.Vector3(-0.5, 0.15, -1),
   ortho: new THREE.Vector3(0, 0, 1),
   detail: new THREE.Vector3(0.75, 0.25, 1),
+  reader: new THREE.Vector3(0.45, 0.2, 1),
 }[view].normalize()
-if (view === 'detail') {
+if (view === 'reader') {
+  const rd = machine.strokePath.reader
+  target.set(rd.x, rd.y, machine.layout.zFront)
+  persp.position.copy(target).addScaledVector(dir, 0.75)
+} else if (view === 'detail') {
   // Close on the focus slot at about 1.25 m. With the module pulled out, look past it from the
   // side and above so the open slot's fitment shows.
   const s = machine.layout.slots[Math.min(focusSlot, machine.layout.slots.length - 1)]

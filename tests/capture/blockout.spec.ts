@@ -45,7 +45,7 @@ const shots: Shot[] = [
   // Stroke paths and light states
   { name: '15-stroke-spine-front', query: 'view=front&stroke=spine' },
   { name: '16-stroke-serpentine-front', query: 'view=front&stroke=serpentine' },
-  { name: '17-stroke-spine-header-detail', query: 'view=detail&stroke=spine&slot=0', size: wide },
+  { name: '17-stroke-spine-reader-detail', query: 'view=reader&stroke=spine', size: wide },
   { name: '18-stroke-serpentine-header-detail', query: 'view=detail&stroke=serpentine&slot=0', size: wide },
   { name: '19-light-states-front', query: 'view=front&lights=demo' },
   { name: '19b-light-states-detail', query: 'view=detail&lights=demo&slot=6', size: wide },
