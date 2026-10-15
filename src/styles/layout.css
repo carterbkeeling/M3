@@ -1,0 +1,139 @@
+/* Page structure. The 3D stage is a fixed layer between the page background and the content:
+   positioned content sits above it; the hero wordmark (unpositioned) sits behind the machine. */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Each section paints its own tone, so text is always on the right background; the fixed stage
+   (later in the DOM) paints above section backgrounds and below positioned content. */
+.s {
+  position: relative;
+  min-height: 100svh;
+  padding: calc(var(--nav-h) + 48px) 0 96px;
+  background: var(--tone-bg);
+}
+.s__inner {
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+.s__inner > *,
+.copy,
+.nav,
+.cards,
+.specs__table,
+.footer > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Two columns on desktop: copy on one side, the machine on the other (framed by the stage). */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: calc(100svh - var(--nav-h) - 144px);
+  align-items: center;
+}
+.copy {
+  display: grid;
+  gap: 22px;
+  max-width: 560px;
+}
+@media (min-width: 900px) {
+  .split {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  }
+  .split--right {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  }
+  .split--right .copy {
+    grid-column: 2;
+  }
+}
+
+/* Mobile: the machine owns the top of the screen; copy starts below it on a tone panel. */
+@media (max-width: 899px) {
+  .s:not(.s--hero):not(.s--background):not(.s--specs):not(.s--footer) .split .copy {
+    margin-top: calc(56svh - var(--nav-h) - 48px);
+    padding: 24px 0 8px;
+    background: linear-gradient(to bottom, transparent, var(--tone-bg) 28px);
+  }
+}
+
+/* Scroll-driven scenes: a tall section with a sticky viewport inside it. */
+.s--tall {
+  height: 320vh;
+  padding: 0;
+}
+.s--tall-short {
+  height: 220vh;
+}
+.s--connected.s--tall {
+  height: 260vh;
+}
+.sticky {
+  position: sticky;
+  z-index: 1; /* pinned copy always paints above the machine */
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  padding-top: var(--nav-h);
+  display: flex;
+  align-items: center;
+}
+.sticky .split {
+  min-height: 0;
+}
+@media (max-width: 899px) {
+  .sticky {
+    align-items: flex-end;
+    padding-bottom: 24px;
+  }
+  .sticky .split .copy {
+    margin-top: 0;
+  }
+  .s--tall {
+    height: 240vh;
+  }
+  .s--tall-short {
+    height: 180vh;
+  }
+}
+
+/* Section divider: one continuous stroke that draws itself as it scrolls into view. */
+.divider {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  width: 100%;
+  height: 40px;
+  z-index: 2;
+  fill: none;
+  stroke: var(--accent-ui);
+  stroke-width: var(--stroke);
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.narrow {
+  max-width: 880px;
+  display: grid;
+  gap: 24px;
+}
+.narrow > .lede {
+  max-width: 44ch;
+}
+.narrow > p:not(.lede):not(.caption) {
+  max-width: 64ch;
+}

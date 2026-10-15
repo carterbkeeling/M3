@@ -1,4 +1,5 @@
 import type { Machine } from './buildMachine.ts'
+import { buildContents } from './components/Contents.ts'
 import { setLightState } from './components/StatusLight.ts'
 
 // Pose the machine: door swing, module pull-out and status lights. t runs 0 → 1.
@@ -30,6 +31,21 @@ export function setModuleRemoved(machine: Machine, slot: number, removed: boolea
   if (!s?.module) return
   s.module.group.visible = !removed
   setLightState(s.light, removed ? 'none' : 'plugged')
+}
+
+// Show a module as packed (1) or as returned (lower): only ever staged at the warehouse.
+export function setContentsFill(machine: Machine, slot: number, fill: number) {
+  const mod = machine.slots[slot]?.module
+  if (!mod) return
+  const old = mod.group.getObjectByName('Contents')
+  if (!old || old.userData.fill === fill) return
+  const box = old.userData.box as { w: number; h: number; d: number } | undefined
+  if (!box) return
+  const next = buildContents(box.w, box.h, box.d, machine.materials, fill)
+  next.position.copy(old.position)
+  next.userData = { fill, box }
+  old.removeFromParent()
+  mod.group.add(next)
 }
 
 export function resetMachine(machine: Machine) {

@@ -17,10 +17,19 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
   },
-  webServer: {
-    command: 'npx vite --port 5173 --strictPort',
-    url: 'http://localhost:5173/M3/',
-    reuseExistingServer: true,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: 'npx vite --port 5173 --strictPort',
+      url: 'http://localhost:5173/M3/',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      // The production build (CSP on, comments stripped) for e2e checks.
+      command: 'npx vite build && npx vite preview --port 4173 --strictPort',
+      url: 'http://localhost:4173/M3/',
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+  ],
 })

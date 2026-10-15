@@ -71,6 +71,7 @@ export function buildModule(cfg: MachineConfig, s: SlotRect, spec: ModuleSpec, z
 
   const contents = buildContents(tw - 2 * wall, th - 2 * wall, depth - wall, m, 1)
   contents.position.set(0, tub.position.y, zTubFront)
+  contents.userData = { fill: 1, box: { w: tw - 2 * wall, h: th - 2 * wall, d: depth - wall } }
 
   const door = buildDoor(cfg, s.w, s.h, m)
   group.add(tub, contents, door.pivot)
