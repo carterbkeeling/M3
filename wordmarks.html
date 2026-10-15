@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>m³ wordmark candidates</title>
+    <link rel="icon" href="data:," />
+    <!-- Dev-only specimen page (not a build input). Captured by tests/capture/wordmarks.spec.ts. -->
+    <style>
+      :root {
+        --graphite: #15161a;
+        --bone: #f3efe7;
+        --cyan: #12d6ff;
+        --g60: #7f8187;
+        --cap-light: #5c5e63;
+        --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+        --sans: system-ui, 'Segoe UI', sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: var(--graphite); color: var(--bone); font: 14px/1.45 var(--sans); }
+      body { padding: 32px 40px 64px; }
+      h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
+      h2 { margin: 0; font-size: 20px; font-weight: 700; }
+      h3 { margin: 0 0 12px; font: 500 11px/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--g60); }
+      .light h3 { color: var(--cap-light); }
+      p { margin: 0; }
+      .intro { color: var(--g60); max-width: 1080px; margin-bottom: 28px; }
+      .intro code, .meta { font-family: var(--mono); font-size: 12px; }
+      .note { color: var(--g60); font-size: 12px; max-width: 1080px; margin-top: 16px; }
+
+      .lineup { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 48px; }
+      .lineup .sizes { gap: 36px 44px; }
+
+      section.cand { margin: 0 0 56px; padding: 24px; border: 1px solid #2a2c31; border-radius: 16px; background: var(--graphite); }
+      .cand-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin-bottom: 4px; }
+      .cand-head .meta { color: var(--g60); }
+      .cand-head .desc { flex-basis: 100%; color: #c9c5bd; max-width: 1100px; }
+      .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font: 500 11px/1.6 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+      .chip.yes { background: var(--cyan); color: var(--graphite); }
+      .chip.no { border: 1px solid var(--g60); color: var(--g60); }
+
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .panel { padding: 24px; border-radius: 12px; border: 1px solid #2a2c31; background: var(--graphite); color: var(--bone); }
+      .panel.light { background: var(--bone); color: var(--graphite); border-color: #d9d4ca; }
+      section > .panel, section > .grid2 { margin-top: 16px; }
+
+      .hero { display: flex; align-items: flex-end; min-height: 320px; margin-bottom: 28px; }
+      .sizes { display: flex; align-items: flex-end; gap: 40px; flex-wrap: wrap; }
+      .sizes.compare { gap: 56px; }
+      .sizes.compare + .sizes.compare { margin-top: 28px; }
+      .size { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+      .size .label, .frame .label { font: 400 11px/1 var(--mono); color: var(--g60); }
+      .light .size .label { color: var(--cap-light); }
+      svg { display: block; overflow: visible; }
+
+      .frames { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-end; }
+      .frame { display: flex; flex-direction: column; gap: 10px; }
+      svg.timeline { margin-top: 24px; overflow: visible; }
+      svg.timeline text { font: 400 10.5px var(--mono); fill: var(--g60); }
+
+      .construct { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: start; }
+      .report { font: 12px/1.6 var(--mono); color: #c9c5bd; white-space: pre-wrap; }
+      .report .bad { color: #ff8a7a; }
+      .report .ok { color: var(--cyan); }
+
+      .loupes { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+      .loupes canvas { display: block; image-rendering: pixelated; border-radius: 4px; }
+
+      .nav { display: flex; align-items: center; gap: 28px; height: 56px; padding: 0 20px; border-radius: 10px; font: 500 14px/1 var(--sans); }
+      .nav.dark { background: var(--graphite); color: var(--bone); border: 1px solid #2a2c31; }
+      .nav.light { background: var(--bone); color: var(--graphite); }
+      .nav .links { display: flex; gap: 22px; margin-left: 12px; }
+      .nav .links span { opacity: 0.85; }
+      .nav .pill { margin-left: auto; padding: 8px 16px; border-radius: 999px; border: 1.5px solid currentColor; }
+      .navs { display: grid; gap: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>m³ wordmark candidates</h1>
+    <p class="intro">
+      Phase 1 specimen (dev only), revised after the independent critique. Each mark is a set of constant-width stroke
+      centerlines (<code>src/brand/wordmark.ts</code>) drawn with round caps and joins; every turn is an exact circular arc.
+      Stroke width 10, m height 80, so at 16 px the stroke is exactly the UI's 2 px, stems land on whole pixels and every
+      mark is a whole number of pixels wide. Heights are the m's height in CSS px. Each candidate also shows its loader
+      (frames over the loader's timeline) and a side-by-side with a schematic of the Muni worm, drawn from its traits
+      only (the real logo stays out of the repo). Colors: bone #F3EFE7, graphite #15161A, Pipe Cyan #12D6FF; never red.
+    </p>
+    <div id="app"></div>
+    <script type="module" src="/src/wordmarks.ts"></script>
+  </body>
+</html>

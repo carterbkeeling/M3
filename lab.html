@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>m³ blockout lab</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #15161a; }
+      canvas { display: block; }
+      #info { position: fixed; left: 12px; bottom: 10px; font: 12px/1.4 ui-monospace, Consolas, monospace; color: #7f8187; pointer-events: none; white-space: pre; }
+      body.light #info { color: #5c5e63; }
+      body.clean #info { display: none; }
+    </style>
+  </head>
+  <body>
+    <!-- Dev-only blockout harness (not a build input). URL overrides:
+         ?colorway=graphiteMatte|carbonSatin|charcoalTwoTone &door=side|drop &stroke=spine|serpentine
+         &state=closed|open|pulled &slot=N &view=front|threequarter|side|back|ortho &bg=dark|light
+         &grid=CxR &modules=all|one|none &clean=1 -->
+    <div id="info"></div>
+    <script type="module" src="/src/lab.ts"></script>
+  </body>
+</html>
