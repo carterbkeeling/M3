@@ -22,6 +22,12 @@ export function elevationSvg(cfg: MachineConfig = defaultConfig): string {
   const slots = L.slots
     .map((s) => `<rect x="${X(s.left)}" y="${Y(s.top)}" width="${mm(s.w)}" height="${mm(s.h)}" rx="${mm(cfg.radius.inner)}"/>`)
     .join('')
+  // Leveling feet, from the plinth down to the floor, where the height dimension ends. Same place and
+  // size as the 3D feet (Cabinet.ts: centers 70 mm in from each side, 52 mm across at the floor).
+  const footW = 52
+  const feet = [-1, 1]
+    .map((sx) => `<rect x="${X(sx * (L.W / 2 - 0.07)) - footW / 2}" y="${Y(L.feet)}" width="${footW}" height="${mm(L.feet)}" rx="4"/>`)
+    .join('')
   const inch = (m: number) => Math.round(m / 0.0254)
   const dimH = `≈ ${inch(L.H)} in · ${(L.H).toFixed(2)} m`
   const dimW = `≈ ${inch(L.W)} in · ${(L.W).toFixed(2)} m`
@@ -32,6 +38,7 @@ export function elevationSvg(cfg: MachineConfig = defaultConfig): string {
     `<g class="elevation__body" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round">` +
     `<rect x="${pad}" y="${Y(L.H)}" width="${W}" height="${mm(L.H - L.skinBottom)}" rx="${mm(cfg.radius.corner)}"/>` +
     `<rect x="${pad + 30}" y="${Y(L.skinBottom)}" width="${W - 60}" height="${mm(L.skinBottom - L.feet)}" rx="8"/>` +
+    feet +
     `<g stroke-width="3">${slots}</g>` +
     `</g>` +
     `<g class="elevation__dims" fill="none" stroke="currentColor" stroke-width="2">` +

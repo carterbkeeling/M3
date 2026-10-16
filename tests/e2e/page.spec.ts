@@ -5,12 +5,22 @@ import { test, expect, type Page } from '@playwright/test'
 
 const PREVIEW = 'http://localhost:4173/M3/'
 
-const variants = [
-  { label: 'desktop', size: { width: 1440, height: 900 }, query: '', reduced: false },
-  { label: 'mobile', size: { width: 390, height: 844 }, query: '', reduced: false },
-  { label: 'desktop-nowebgl', size: { width: 1440, height: 900 }, query: '?nowebgl', reduced: false },
-  { label: 'mobile-reduced', size: { width: 390, height: 844 }, query: '', reduced: true },
+// Every path (default, reduced motion, no WebGL) at every acceptance width.
+const sizes = [
+  { width: 360, height: 780 },
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1440, height: 900 },
+  { width: 2560, height: 1440 },
 ]
+const variants = (['default', 'reduced', 'nowebgl'] as const).flatMap((path) =>
+  sizes.map((size) => ({
+    label: `${path} · ${size.width}`,
+    size,
+    query: path === 'nowebgl' ? '?nowebgl' : '',
+    reduced: path === 'reduced',
+  })),
+)
 
 function collect(page: Page) {
   const problems: string[] = []

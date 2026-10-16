@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { config, type MachineConfig, type StrokePathKind } from '../../src/model/config.ts'
-import { buildMachine } from '../../src/model/buildMachine.ts'
+import { buildMachine, type Machine } from '../../src/model/buildMachine.ts'
 import { layout, outerDims } from '../../src/model/dims.ts'
+import { setContentsFill } from '../../src/model/machineState.ts'
+import { pipeIntensity } from '../../src/model/materials.ts'
 import { buildStrokePath } from '../../src/model/strokePath.ts'
+import { explodedScene, swapScene, unlockScene } from '../../src/scene/scenes.ts'
 
 const variant = (patch: Partial<MachineConfig>): MachineConfig => ({ ...structuredClone(config), ...patch })
 
@@ -151,5 +154,113 @@ describe('buildMachine', () => {
     const drop = buildMachine(variant({ door: { ...config.door, style: 'drop' } }))
     expect(side.slots[0].module!.door.openAxis).toBe('y')
     expect(drop.slots[0].module!.door.openAxis).toBe('x')
+  })
+})
+
+const cartons = (m: Machine, slot: number) => m.slots[slot].module!.group.getObjectByName('Contents')!.children.map((c) => c.position)
+
+describe('module contents', () => {
+  it('a part-used module has been emptied from the front and the top first', () => {
+    const m = buildMachine(config)
+    const full = cartons(m, 0)
+    const layers = [...new Set(full.map((p) => p.z.toFixed(4)))].map(Number).sort((a, b) => a - b) // back → front
+    const rows = [...new Set(full.map((p) => p.y.toFixed(4)))].map(Number).sort((a, b) => a - b) // floor → top
+    setContentsFill(m, 0, 0.35)
+    const left = cartons(m, 0)
+    expect(left.length).toBe(Math.round(full.length * 0.35))
+    // The front two layers are bare floor, and what is left on top sits behind what is left below.
+    expect(Math.max(...left.map((p) => p.z))).toBeLessThanOrEqual(layers[2] + 1e-6)
+    const top = left.filter((p) => p.y > rows[0] + 1e-6).map((p) => p.z)
+    const bottom = left.filter((p) => p.y <= rows[0] + 1e-6).map((p) => p.z)
+    expect(Math.max(...top)).toBeLessThan(Math.max(...bottom))
+  })
+
+  it('fills in one order: every carton in a fuller module is kept in a less used one', () => {
+    const m = buildMachine(config)
+    const key = (p: { x: number; y: number; z: number }) => [p.x, p.y, p.z].map((v) => v.toFixed(4)).join()
+    let prev = new Set<string>()
+    for (let f = 1; f <= 10; f++) {
+      setContentsFill(m, 0, f / 10)
+      const now = new Set(cartons(m, 0).map(key))
+      for (const k of prev) expect(now.has(k)).toBe(true)
+      prev = now
+    }
+  })
+})
+
+describe('scenes', () => {
+  const cols = config.grid.cols
+  const midRow = Math.round(config.grid.rows / 2) - 1
+
+  it('swap: Load holds on a packed module, Count on a part-used one', () => {
+    const m = buildMachine(config)
+    const slot = midRow * cols + cols - 1
+    const scene = swapScene(m, slot)
+    scene.apply(0.16)
+    expect(cartons(m, slot).length).toBe(30)
+    scene.apply(0.84)
+    expect(cartons(m, slot).length).toBe(11)
+  })
+
+  it('exploded: the pulled module is set clear of its opening and of the bezel, then goes home', () => {
+    const m = buildMachine(config)
+    const slot = cols * Math.max(0, midRow - 1)
+    const s = m.slots[slot]
+    const g = s.module!.group
+    const scene = explodedScene(m, slot)
+    for (const p of [0.3, 0.36, 0.6, 0.7]) {
+      scene.apply(p)
+      expect(g.position.y - s.rect.y).toBeGreaterThan(s.rect.h) // above the opening it came out of
+      const tubBack = g.position.z - 0.006 - s.module!.depth
+      expect(tubBack).toBeGreaterThan(m.cabinet.bezel.position.z + m.layout.zFront + 0.03) // clear of the bezel, even moved forward
+    }
+    for (const p of [0, 1]) {
+      scene.apply(p)
+      expect([g.position.x, g.position.y, g.position.z]).toEqual([s.rect.x, s.rect.y, m.layout.zFront])
+    }
+  })
+
+  it('exploded: the machine turns nearly face-on while the slot is lit, and back before it separates', () => {
+    const m = buildMachine(config)
+    const scene = explodedScene(m, cols * Math.max(0, midRow - 1))
+    const modularYaw = 0.5 // framings.ts
+    scene.apply(0.3) // reduced motion holds here
+    expect(modularYaw + m.root.rotation.y).toBeGreaterThan(0)
+    expect(modularYaw + m.root.rotation.y).toBeLessThan(0.2) // the connector at the slot's back shows
+    for (const p of [0, 0.6, 1]) {
+      scene.apply(p)
+      expect(m.root.rotation.y).toBeCloseTo(0, 9)
+    }
+  })
+
+  it('unlock: the badge shows only around the tap, on the pad; the machine never carries one', () => {
+    expect(buildMachine(config).root.getObjectByName('Badge')).toBeUndefined()
+    const m = buildMachine(config)
+    const scene = unlockScene(m, (midRow + 1) * cols)
+    const badge = m.root.getObjectByName('Badge')!
+    for (const p of [0, 0.02, 0.4, 0.62, 1]) {
+      scene.apply(p)
+      expect(badge.visible).toBe(false)
+    }
+    scene.apply(0.2)
+    expect(badge.visible).toBe(true)
+    const padFace = m.reader.group.position.z + 0.006
+    expect(badge.position.z - padFace).toBeGreaterThanOrEqual(0)
+    expect(badge.position.z - padFace).toBeLessThan(0.002)
+  })
+
+  it('unlock: the ring pulses in its section and is left to the free views outside it', () => {
+    const m = buildMachine(config)
+    const ring = m.materials.readerRing
+    const scene = unlockScene(m, (midRow + 1) * cols)
+    scene.apply(0.22)
+    expect(ring.emissiveIntensity).toBeGreaterThan(pipeIntensity.reader + 1)
+    scene.apply(1)
+    expect(ring.emissiveIntensity).toBe(pipeIntensity.reader)
+    // A free-view unlock pulse (interaction.ts tweens the same material) survives the next frames.
+    ring.emissiveIntensity = pipeIntensity.reader + 1.4
+    scene.apply(1)
+    scene.apply(0)
+    expect(ring.emissiveIntensity).toBe(pipeIntensity.reader + 1.4)
   })
 })

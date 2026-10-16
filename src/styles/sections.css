@@ -276,16 +276,17 @@
   inset: 0;
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 72% auto;
+  background-size: cover;
   transition: opacity 0.45s var(--ease);
 }
-/* Placeholder art until Phase 3 renders the module stills: a full module / a returned one. */
+/* Card art: one module rendered on its own (npm run render:assets), full and returned. Decorative;
+   the placard text names the card and aria-pressed carries the state. */
 .card__state--full {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 70'%3E%3Crect x='4' y='4' width='112' height='62' rx='7' fill='%2334363C' stroke='%2312D6FF' stroke-width='1.5'/%3E%3Crect x='20' y='26' width='56' height='18' rx='3' fill='%23F3EFE7'/%3E%3Crect x='96' y='18' width='6' height='34' rx='3' fill='%2315161A'/%3E%3C/svg%3E");
+  background-image: url('/stills/module-full.webp');
 }
 .card__state--returned {
   opacity: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 70'%3E%3Crect x='4' y='4' width='112' height='62' rx='7' fill='%23202226' stroke='%237F8187' stroke-width='1.5'/%3E%3Crect x='14' y='38' width='22' height='22' rx='2' fill='%238A8378'/%3E%3Crect x='40' y='44' width='22' height='16' rx='2' fill='%238A8378'/%3E%3C/svg%3E");
+  background-image: url('/stills/module-returned.webp');
 }
 .card__flip[aria-pressed='true'] .card__state--full {
   opacity: 0;
@@ -448,6 +449,18 @@
 .elevation__labels {
   font-family: var(--font-mono);
 }
+/* More contrast: the drawing's lines (in mm; under 1 px on screen) thicken too, like --stroke. */
+@media (prefers-contrast: more) {
+  .elevation__body {
+    stroke-width: 6;
+  }
+  .elevation__body g {
+    stroke-width: 5;
+  }
+  .elevation__dims {
+    stroke-width: 4;
+  }
+}
 /* With live WebGL the machine itself stands in the drawing; only the dimension lines overlay it. */
 html[data-gl='webgl2'] .elevation__body {
   opacity: 0;
@@ -513,4 +526,189 @@ html[data-gl='webgl2'] .elevation__body {
 }
 .footer__mark {
   color: var(--fg);
+}
+
+/* ---- Interaction layer (hero and parked views) -------------------------------------------- */
+/* Vertical swipes always scroll the page; horizontal drags turn the machine. */
+.s--hero,
+.s--built,
+.sticky {
+  touch-action: pan-y;
+}
+.hotspots {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.hotspots[hidden] {
+  display: none;
+}
+/* Invisible to the mouse (the canvas handles pointer input); a visible target for the keyboard. */
+.hotspot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  pointer-events: none;
+}
+.hotspot:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px #15161a,
+    0 0 0 6px #12d6ff;
+}
+/* Opaque graphite on every tone, so the hint keeps AA contrast over bone sections too. */
+.turn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform-origin: 0 0;
+  translate: -50% 0;
+  pointer-events: auto;
+  padding: 4px;
+  border-radius: var(--r-pill);
+  background: var(--graphite);
+  color: #f3efe7;
+}
+.turn__btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid rgba(243, 239, 231, 0.4);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.turn__btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 10px;
+  height: 10px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 1px;
+  transform: translateX(2px) rotate(45deg);
+}
+.turn__btn--right::before {
+  transform: translateX(-2px) rotate(-135deg);
+}
+.turn__btn:hover {
+  border-color: #12d6ff;
+  color: #12d6ff;
+}
+.turn__btn:focus-visible {
+  outline: 3px solid #12d6ff;
+  outline-offset: 2px;
+}
+.turn__hint {
+  color: #a9abb0;
+  white-space: nowrap;
+}
+@media (max-width: 899px) {
+  .turn__hint {
+    display: none;
+  }
+}
+
+.debug-fps {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(21, 22, 26, 0.85);
+  color: #12d6ff;
+  font: 500 12px/1 var(--font-mono);
+}
+
+/* ---- No WebGL: rendered stills and text, no pinned scenes ---------------------------------- */
+.still {
+  display: none;
+}
+html.no-webgl .still {
+  display: block;
+  width: min(100%, 560px);
+  height: auto;
+  margin: 24px auto 0;
+}
+/* If the stage falls back after starting (main.ts bootStage), nothing it made stays on screen. */
+html.no-webgl .stage,
+html.no-webgl .hotspots {
+  display: none;
+}
+html.no-webgl .s--tall,
+html.no-webgl .s--tall-short {
+  height: auto;
+}
+html.no-webgl .sticky {
+  position: static;
+  height: auto;
+  padding: calc(var(--nav-h) + 48px) 0 96px;
+}
+/* Every beat reads as plain, equal text (main.ts doesn't light one), and there is no rail to follow. */
+html.no-webgl .beats {
+  gap: 16px;
+}
+html.no-webgl .beat {
+  opacity: 1 !important;
+  grid-area: auto !important;
+  color: var(--fg);
+}
+html.no-webgl .progress {
+  display: none;
+}
+html.no-webgl .s:not(.s--hero) .split .copy {
+  margin-top: 0 !important;
+}
+html.no-webgl .hero {
+  padding-top: 0;
+}
+html.no-webgl .elevation__body {
+  opacity: 1;
+}
+/* Desktop: the still takes the column the live machine would; text-only splits go single-column. */
+@media (min-width: 900px) {
+  html.no-webgl .split > .still {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: center;
+    max-height: calc(100svh - var(--nav-h) - 96px);
+    object-fit: contain;
+  }
+  html.no-webgl .split--right > .still {
+    grid-column: 1;
+  }
+  html.no-webgl .split:not(.has-still) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html.no-webgl .split:not(.has-still) .copy {
+    grid-column: 1;
+    max-width: 68ch;
+  }
+  html.no-webgl .hero {
+    position: relative;
+  }
+  html.no-webgl .hero > .still {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: min(50%, 600px);
+    max-height: calc(100svh - var(--nav-h) - 48px);
+    margin: 0;
+    translate: 0 -50%;
+    object-fit: contain;
+  }
 }

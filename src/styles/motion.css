@@ -1,0 +1,113 @@
+/* Motion: the intro loader (src/ui/loader.ts) and the scroll reveals (src/ui/reveal.ts).
+   Everything here is inert until the scripts run: the loader builds its own overlay, and the reveal
+   start states apply only under html.js-reveal, which reveal.ts adds (never under reduced motion).
+   No inline styles are needed in HTML (production CSP: style-src 'self'); positions that change
+   per frame are set from JS through element.style, which the CSP allows. */
+
+/* ---- Loader ----------------------------------------------------------------------------------- */
+
+/* A graphite field over the already-painted page. It slides up and away (like the page scrolling
+   past a section), with the cyan section-divider stroke riding its bottom edge. */
+.m3-loader {
+  --accent-ui: var(--cyan);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  color: var(--bone);
+  color-scheme: dark;
+  overflow: hidden;
+  contain: layout paint style;
+}
+.m3-loader[data-state='open'] {
+  pointer-events: none;
+}
+.m3-loader__field {
+  position: absolute;
+  inset: 0;
+  background: var(--graphite);
+}
+.m3-loader__edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--stroke);
+  border-radius: var(--stroke);
+  background: var(--cyan);
+  transform: scaleX(0);
+}
+.m3-loader__mark {
+  position: relative;
+  display: block;
+  width: auto;
+  height: clamp(56px, 8vw, 112px);
+  overflow: visible;
+  color: var(--cyan); /* the pen: Pipe Cyan, then it settles to bone (loader.ts tweens `color`) */
+}
+.m3-loader--static .m3-loader__mark {
+  color: var(--bone);
+}
+
+/* Skip control: hidden until it has focus (keyboard or screen-reader focus), then a pill. */
+.m3-loader__skip {
+  position: absolute;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  translate: -50% 0;
+  padding: 11px 18px;
+  border: var(--stroke) solid currentColor;
+  border-radius: var(--r-pill);
+  background: var(--graphite);
+  color: var(--bone);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.m3-loader__skip:not(:focus) {
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ---- Scroll reveals --------------------------------------------------------------------------- */
+
+/* Waiting to be revealed. Only ever applied by reveal.ts, which adds html.js-reveal and marks each
+   target; without JS (or under reduced motion) nothing is hidden. The motion itself is inline
+   (GSAP) and cleared when it ends. */
+html.js-reveal [data-reveal='pending'] {
+  opacity: 0;
+}
+
+/* Caption type-in: a block cursor walks the line while a clip uncovers the text behind it. */
+html.js-reveal [data-reveal='typing'] {
+  position: relative;
+}
+.rv-cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  background: var(--accent-ui, currentColor);
+  border-radius: 1px;
+}
+
+@media print {
+  html.js-reveal [data-reveal],
+  html.js-reveal [data-reveal] > span {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    clip-path: none !important;
+  }
+  .rv-cursor,
+  .m3-loader {
+    display: none !important;
+  }
+}

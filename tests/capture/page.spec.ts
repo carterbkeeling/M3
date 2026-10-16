@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 
-// Phase 2: screenshots of every section at 1440 px and 390 px wide, scroll scenes at several points.
-// Output: docs/checkpoints/phase-2/{desktop|mobile}-NN-name.jpg
+// Screenshots of every section at 1440 px and 390 px wide, scroll scenes at several points.
+// Output: docs/checkpoints/phase-3/page-{desktop|mobile}-NN-name.jpg (phase 2's set is kept as committed).
 
-const OUT = 'docs/checkpoints/phase-2'
+const OUT = 'docs/checkpoints/phase-3'
 mkdirSync(OUT, { recursive: true })
 
 interface Shot {
@@ -59,11 +59,11 @@ for (const vp of viewports) {
     })
     page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`))
     await page.setViewportSize(vp.size)
-    await page.goto('./')
+    await page.goto('./?static')
     await page.waitForFunction(() => document.documentElement.dataset.stageReady === 'true', null, { timeout: 30_000 })
     for (const shot of shots) {
       await scrollToShot(page, shot)
-      await page.screenshot({ path: `${OUT}/${vp.label}-${shot.name}.jpg`, type: 'jpeg', quality: 84 })
+      await page.screenshot({ path: `${OUT}/page-${vp.label}-${shot.name}.jpg`, type: 'jpeg', quality: 84 })
     }
     if (problems.length) console.log(`[${vp.label}] console:\n  ${problems.join('\n  ')}`)
     expect(problems.filter((p) => !/X4122|Program Info Log/.test(p))).toEqual([])

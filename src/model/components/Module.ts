@@ -4,6 +4,7 @@ import type { MachineConfig, ModuleSpec } from '../config.ts'
 import type { SlotRect } from '../dims.ts'
 import type { MachineMaterials } from '../materials.ts'
 import { profileArc, roundedRectOutline, roundedSlab, sweepProfile, type Profile } from '../shapes.ts'
+import { cached, keyOf } from '../geometryCache.ts'
 import { buildContents } from './Contents.ts'
 import { buildDoor, type DoorParts } from './Door.ts'
 import { RAIL_H } from './Fitment.ts'
@@ -38,19 +39,21 @@ export function buildModule(cfg: MachineConfig, s: SlotRect, spec: ModuleSpec, z
     ...profileArc(-R, zTubBack + R, R, 0, -Math.PI / 2),
     [-R - 0.002, zTubBack],
   ]
-  const outer = new THREE.Mesh(sweepProfile(roundedRectOutline(tw, th, 0.009, 8), profile), m.door)
-  const cap = new THREE.Mesh(roundedSlab(tw - 2 * R, th - 2 * R, 0.003, 0.004, 0.001), m.door)
+  // Every module is the same size, so all of them share these geometries.
+  const k = (name: string) => keyOf(name, tw, th, depth, wall, cfg.radius.edge)
+  const outer = new THREE.Mesh(cached(k('tub.outer'), () => sweepProfile(roundedRectOutline(tw, th, 0.009, 8), profile)), m.door)
+  const cap = new THREE.Mesh(cached(k('tub.cap'), () => roundedSlab(tw - 2 * R, th - 2 * R, 0.003, 0.004, 0.001)), m.door)
   cap.position.z = zTubBack
-  const linerGeo = new THREE.BoxGeometry(tw - 2 * wall, th - 2 * wall, depth - wall)
+  const linerGeo = cached(k('tub.liner'), () => new THREE.BoxGeometry(tw - 2 * wall, th - 2 * wall, depth - wall))
   const liner = new THREE.Mesh(linerGeo, m.interior)
   liner.position.z = zTubFront - (depth - wall) / 2
   tub.add(outer, cap, liner)
 
   // Molded front collar: the rim the door closes against.
   const collar = new THREE.Mesh(
-    roundedSlab(tw + 0.012, th + 0.012, 0.014, cfg.radius.edge, 0.003, [
-      { w: tw - 2 * wall, h: th - 2 * wall, r: 0.006, cx: 0, cy: 0 },
-    ]),
+    cached(k('tub.collar'), () =>
+      roundedSlab(tw + 0.012, th + 0.012, 0.014, cfg.radius.edge, 0.003, [{ w: tw - 2 * wall, h: th - 2 * wall, r: 0.006, cx: 0, cy: 0 }]),
+    ),
     m.door,
   )
   collar.position.z = zTubFront - 0.014
@@ -58,12 +61,12 @@ export function buildModule(cfg: MachineConfig, s: SlotRect, spec: ModuleSpec, z
 
   // Underside ribs and side runners that ride the fitment rails.
   for (const x of [-tw / 4, 0, tw / 4]) {
-    const rib = new THREE.Mesh(new RoundedBoxGeometry(0.01, 0.01, depth - 0.04, 2, 0.003), m.door)
+    const rib = new THREE.Mesh(cached(k('tub.rib'), () => new RoundedBoxGeometry(0.01, 0.01, depth - 0.04, 2, 0.003)), m.door)
     rib.position.set(x, -th / 2 - 0.005, zTubFront - depth / 2)
     tub.add(rib)
   }
   for (const side of [-1, 1]) {
-    const runner = new THREE.Mesh(new RoundedBoxGeometry(0.01, 0.018, depth - 0.03, 2, 0.003), m.door)
+    const runner = new THREE.Mesh(cached(k('tub.runner'), () => new RoundedBoxGeometry(0.01, 0.018, depth - 0.03, 2, 0.003)), m.door)
     runner.position.set(side * (tw / 2 + 0.002), -th / 2 + 0.012, zTubFront - depth / 2 - 0.01)
     tub.add(runner)
   }

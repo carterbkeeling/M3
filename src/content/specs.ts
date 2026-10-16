@@ -12,6 +12,7 @@ export interface SpecRow {
   note?: string // small mono qualifier, e.g. "approx."
   tbdHint?: string // what is known while the value itself is TBD
   draft?: boolean // wording beyond Product truth: marked <!-- DRAFT --> and listed in COPY-REVIEW
+  approved?: string // date the draft wording was approved (marker becomes <!-- APPROVED date -->)
 }
 
 const inches = (m: number) => Math.round(m / 0.0254)
@@ -29,7 +30,7 @@ export function specRows(cfg: MachineConfig = defaultConfig): SpecRow[] {
     },
     { id: 'slots', label: 'Slots', value: `${slots} (${cfg.grid.cols} × ${cfg.grid.rows}), one universal fitment each` },
     { id: 'modules', label: 'Modules', value: 'One universal size · one product per module' },
-    { id: 'access', label: 'Access', value: 'Badge or phone tap at the reader · openings logged', draft: true },
+    { id: 'access', label: 'Access', value: 'Badge or phone tap at the reader · openings logged', draft: true, approved: '2026-10-15' },
     { id: 'connected', label: 'Connected functions', value: 'Access control · plugged-in status · service and restock alerts' },
     { id: 'connectivity', label: 'Connectivity type', value: null },
     { id: 'power', label: 'Power input', value: null, tbdHint: 'Low-voltage' },
@@ -50,7 +51,7 @@ export function specTableHtml(cfg: MachineConfig = defaultConfig): string {
   const rows = specRows(cfg)
     .map(
       (r) =>
-        `<tr data-spec="${r.id}" data-copy="spec.${r.id}"><th scope="row">${esc(r.label)}</th><td>${r.value === null ? tbdChip(r.tbdHint) : esc(r.value)}${r.note ? ` <span class="spec__note">${esc(r.note)}</span>` : ''}</td></tr>${r.draft ? '<!-- DRAFT -->' : ''}`,
+        `<tr data-spec="${r.id}" data-copy="spec.${r.id}"><th scope="row">${esc(r.label)}</th><td>${r.value === null ? tbdChip(r.tbdHint) : esc(r.value)}${r.note ? ` <span class="spec__note">${esc(r.note)}</span>` : ''}</td></tr>${r.draft ? (r.approved ? `<!-- APPROVED ${r.approved} -->` : '<!-- DRAFT -->') : ''}`,
     )
     .join('')
   return `<table class="spec"><caption class="sr-only">m³ specifications</caption><tbody>${rows}</tbody></table>`

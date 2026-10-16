@@ -47,3 +47,24 @@
   color: var(--fg);
   color-scheme: light;
 }
+
+/* More contrast (OS preference): darker/lighter caption grays, hairlines at ≥ 3:1, thicker strokes
+   (the spec drawing's own line weights follow in sections.css). */
+@media (prefers-contrast: more) {
+  :root {
+    --g60: #a0a2a8; /* 7.08:1 on graphite */
+    --g-cap-light: #44464b; /* 8.24:1 on bone */
+    --stroke: 3px;
+  }
+  [data-tone='dark'] {
+    --hair: rgba(243, 239, 231, 0.4); /* 3.5:1 */
+  }
+  [data-tone='light'] {
+    --hair: rgba(21, 22, 26, 0.5); /* 3.3:1 */
+  }
+}
+@media (prefers-contrast: more) and (min-width: 1440px) {
+  :root {
+    --stroke: 4px;
+  }
+}

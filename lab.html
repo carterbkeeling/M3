@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>m³ blockout lab</title>
+    <title>m³ lab</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #15161a; }
       canvas { display: block; }
@@ -13,10 +13,11 @@
     </style>
   </head>
   <body>
-    <!-- Dev-only blockout harness (not a build input). URL overrides:
+    <!-- Dev-only lab harness (not a build input): production materials, lighting and placards. URL overrides:
          ?colorway=graphiteMatte|carbonSatin|charcoalTwoTone &door=side|drop &stroke=spine|serpentine
-         &state=closed|open|pulled &slot=N &view=front|threequarter|side|back|ortho &bg=dark|light
-         &grid=CxR &modules=all|one|none &clean=1 -->
+         &state=closed|open|pulled|removed &slot=N &bg=dark|light &tier=high|standard &shadows=1
+         &view=front|threequarter|threequarterleft|side|back|ortho|detail|reader|placard|hero
+         &grid=CxR &modules=all|one|some|none &name=…&packed=… (rename the focus slot) &clean=1 -->
     <div id="info"></div>
     <script type="module" src="/src/lab.ts"></script>
   </body>

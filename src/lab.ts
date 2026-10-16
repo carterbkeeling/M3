@@ -1,12 +1,17 @@
+import '@fontsource/m-plus-rounded-1c/latin-900.css'
+import '@fontsource-variable/jetbrains-mono/wght.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { config as baseConfig, colorways, type ColorwayId, type DoorStyle, type MachineConfig, type StrokePathKind } from './model/config.ts'
 import { buildMachine } from './model/buildMachine.ts'
+import { setDefaultMaterialTier, type MaterialTier } from './model/materials.ts'
+import { applyPlacards } from './model/placardAtlas.ts'
 import { setDoorOpen, setModulePulled, setModuleRemoved } from './model/machineState.ts'
+import { createContactShadow, setupLighting } from './scene/lighting.ts'
 
-// Dev-only blockout harness: a bare scene with orbit controls. URL overrides sit on top of
-// config.ts for captures only; approved choices get written back into config.ts.
+// Dev-only lab harness: a bare scene with orbit controls, using the production materials, lighting
+// and placard atlas. URL overrides sit on top of config.ts for captures only; approved choices get
+// written back into config.ts.
 
 declare global {
   interface Window {
@@ -26,15 +31,21 @@ cfg.door.style = pick<DoorStyle>('door', ['side', 'drop'], cfg.door.style)
 cfg.stroke.path = pick<StrokePathKind>('stroke', ['spine', 'serpentine'], cfg.stroke.path)
 const grid = params.get('grid')?.match(/^(\d+)x(\d+)$/)
 if (grid) cfg.grid = { cols: Number(grid[1]), rows: Number(grid[2]) }
-const modulesMode = pick('modules', ['all', 'one', 'none'] as const, 'all')
+const modulesMode = pick('modules', ['all', 'one', 'none', 'some'] as const, 'all')
 const state = pick('state', ['closed', 'open', 'pulled', 'removed'] as const, 'closed')
-const view = pick('view', ['front', 'threequarter', 'threequarterleft', 'side', 'back', 'ortho', 'detail', 'reader'] as const, 'threequarter')
+const view = pick('view', ['front', 'threequarter', 'threequarterleft', 'side', 'back', 'ortho', 'detail', 'reader', 'placard', 'hero'] as const, 'threequarter')
+const tier = pick<MaterialTier>('tier', ['high', 'standard'], 'high')
 const showScale = params.get('scale') === '1'
+const shadows = params.get('shadows') === '1'
 const demoLights = params.get('lights') === 'demo'
 const bg = pick('bg', ['dark', 'light'] as const, 'dark')
 const focusSlot = Number(params.get('slot') ?? 4)
+// Lab-only: rename one placard (?name=…&packed=…) to check long names and shrink-to-fit.
+const rename = params.get('name')
+if (rename) cfg.modules[focusSlot] = { product: rename, packed: params.get('packed') ?? cfg.modules[focusSlot]?.packed ?? '10' }
 if (modulesMode === 'none') cfg.modules = []
-if (modulesMode === 'one') cfg.modules = cfg.modules.slice(0, 1)
+// 'some': every third slot empty, to check the atlas with gaps.
+if (modulesMode === 'some') cfg.modules = cfg.modules.map((m, i) => (i % 3 === 1 ? undefined : m)) as MachineConfig['modules']
 document.body.classList.toggle('light', bg === 'light')
 document.body.classList.toggle('clean', params.get('clean') === '1')
 
@@ -44,6 +55,7 @@ if (modulesMode === 'one') {
   cfg.modules = Array.from({ length: focusSlot + 1 }, (_, i) => (i === focusSlot ? spec : undefined)) as MachineConfig['modules']
 }
 
+setDefaultMaterialTier(tier)
 const machine = buildMachine(cfg)
 if (state === 'open') setDoorOpen(machine, focusSlot, 1)
 if (state === 'pulled') {
@@ -64,68 +76,26 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffe
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.toneMapping = THREE.NeutralToneMapping
-renderer.shadowMap.enabled = true
-renderer.shadowMap.type = THREE.PCFShadowMap
 document.body.appendChild(renderer.domElement)
 
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(BG[bg])
-const pmrem = new THREE.PMREMGenerator(renderer)
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
-scene.environmentIntensity = 0.8
+const lighting = setupLighting(scene, renderer, { shadows, tone: bg })
 
-machine.root.traverse((o) => {
-  if ((o as THREE.Mesh).isMesh) {
-    o.castShadow = true
-    o.receiveShadow = true
-  }
-})
-scene.add(machine.root)
-
-const key = new THREE.DirectionalLight('#ffffff', 2.0)
-key.position.set(-1.2, 3.6, 2.2)
-key.castShadow = true
-key.shadow.mapSize.set(2048, 2048)
-key.shadow.camera.left = -3
-key.shadow.camera.right = 3
-key.shadow.camera.top = 4
-key.shadow.camera.bottom = -1
-key.shadow.bias = -0.0004
-scene.add(key)
-const fill = new THREE.DirectionalLight('#ffffff', 0.9)
-fill.position.set(2.6, 1.4, 1.2)
-scene.add(fill)
-const rim = new THREE.DirectionalLight('#ffffff', bg === 'dark' ? 1.2 : 0.7)
-rim.position.set(-2.4, 2.2, -2.0)
-scene.add(rim)
-scene.add(new THREE.HemisphereLight('#ffffff', bg === 'dark' ? '#2a2c31' : '#d8d2c6', 0.6))
-
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: bg === 'dark' ? 0.25 : 0.16 }))
-ground.rotation.x = -Math.PI / 2
-ground.receiveShadow = true
-scene.add(ground)
-
-// Soft contact shadow under the footprint (a radial falloff baked into a small DataTexture).
-const N = 64
-const blob = new Uint8Array(N * N * 4)
-for (let y = 0; y < N; y++) {
-  for (let x = 0; x < N; x++) {
-    const dx = (x + 0.5) / N - 0.5
-    const dy = (y + 0.5) / N - 0.5
-    const d = Math.min(1, Math.hypot(dx * 2, dy * 2))
-    const a = Math.pow(1 - d, 2.2)
-    blob.set([0, 0, 0, Math.round(a * 255)], (y * N + x) * 4)
-  }
+if (shadows) {
+  machine.root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) {
+      o.castShadow = true
+      o.receiveShadow = true
+    }
+  })
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: bg === 'dark' ? 0.3 : 0.14 }))
+  ground.rotation.x = -Math.PI / 2
+  ground.receiveShadow = true
+  scene.add(ground)
 }
-const blobTex = new THREE.DataTexture(blob, N, N)
-blobTex.needsUpdate = true
-const contact = new THREE.Mesh(
-  new THREE.PlaneGeometry(machine.dims.W * 1.5, machine.dims.D * 1.6),
-  new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, opacity: bg === 'dark' ? 0.9 : 0.5, depthWrite: false }),
-)
-contact.rotation.x = -Math.PI / 2
-contact.position.y = 0.001
-scene.add(contact)
+machine.root.add(createContactShadow(machine))
+scene.add(machine.root)
 
 // Lab-only scale reference: a plain 1.75 m figure beside the machine (never part of the model).
 if (showScale) {
@@ -160,21 +130,32 @@ const dir = {
   ortho: new THREE.Vector3(0, 0, 1),
   detail: new THREE.Vector3(0.75, 0.25, 1),
   reader: new THREE.Vector3(0.45, 0.2, 1),
+  placard: new THREE.Vector3(0.3, 0.12, 1),
+  hero: new THREE.Vector3(0.62, 0.16, 1),
 }[view].normalize()
+const focus = machine.layout.slots[Math.min(focusSlot, machine.layout.slots.length - 1)]
 if (view === 'reader') {
   const rd = machine.strokePath.reader
   target.set(rd.x, rd.y, machine.layout.zFront)
   persp.position.copy(target).addScaledVector(dir, 0.75)
+} else if (view === 'placard') {
+  // Close on one door's placard (~0.6 m away): the nearest a visitor's camera gets.
+  const placard = machine.slots[focus.index]?.module?.door.placard.insert
+  if (placard) placard.getWorldPosition(target)
+  else target.set(focus.x, focus.y, machine.layout.zFront)
+  persp.position.copy(target).addScaledVector(dir, 0.62)
+} else if (view === 'hero') {
+  // About the hero framing: the machine ~700 px tall in a 900 px viewport.
+  persp.position.copy(target).addScaledVector(dir, (H * 1.3) / 2 / Math.tan(THREE.MathUtils.degToRad(persp.fov / 2)) + D / 2)
 } else if (view === 'detail') {
   // Close on the focus slot at about 1.25 m. With the module pulled out, look past it from the
   // side and above so the open slot's fitment shows.
-  const s = machine.layout.slots[Math.min(focusSlot, machine.layout.slots.length - 1)]
   if (state === 'pulled') {
-    target.set(s.x, s.y - 0.03, machine.layout.zFront + 0.22)
+    target.set(focus.x, focus.y - 0.03, machine.layout.zFront + 0.22)
     dir.set(-0.8, 0.45, 1).normalize()
     persp.position.copy(target).addScaledVector(dir, 1.6)
   } else {
-    target.set(s.x, s.y, machine.layout.zFront - (state === 'removed' ? 0.15 : 0))
+    target.set(focus.x, focus.y, machine.layout.zFront - (state === 'removed' ? 0.15 : 0))
     if (state === 'removed') dir.set(0.35, 0.3, 1).normalize()
     persp.position.copy(target).addScaledVector(dir, 1.25)
   }
@@ -195,7 +176,7 @@ controls.update()
 
 const info = document.getElementById('info')!
 info.textContent =
-  `m³ blockout · ${colorways[cfg.colorway].name} · door ${cfg.door.style} · stroke ${cfg.stroke.path} · grid ${cfg.grid.cols}×${cfg.grid.rows}\n` +
+  `m³ lab · ${colorways[cfg.colorway].name} · ${tier} tier · door ${cfg.door.style} · stroke ${cfg.stroke.path} · grid ${cfg.grid.cols}×${cfg.grid.rows}\n` +
   `outer ${W.toFixed(3)} × ${H.toFixed(3)} × ${D.toFixed(3)} m  (${(W / 0.0254).toFixed(1)} × ${(H / 0.0254).toFixed(1)} × ${(D / 0.0254).toFixed(1)} in)`
 
 window.addEventListener('resize', () => {
@@ -205,9 +186,19 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
 
+// Ready for a capture once the placards are drawn with the real fonts and a few frames are in.
+let placardsReady = false
+applyPlacards(machine, renderer)
+  .then((atlas) => atlas.fontsReady)
+  .catch((e: unknown) => console.error(e))
+  .finally(() => (placardsReady = true))
+
 let frames = 0
 renderer.setAnimationLoop(() => {
   controls.update()
   renderer.render(scene, camera)
-  if (++frames === 3) window.__labReady = true
+  if (placardsReady && ++frames === 3) window.__labReady = true
 })
+
+// Expose for console tuning in the lab only.
+Object.assign(window, { lab: { scene, machine, lighting, renderer } })

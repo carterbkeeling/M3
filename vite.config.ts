@@ -1,5 +1,8 @@
+import { createHash } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
 import { expandBlocks } from './src/content/blocks.ts'
+import { t } from './src/content/copy.ts'
 import { SITE_URL } from './src/content/site.ts'
 
 // GitHub Pages project site: https://carterbkeeling.github.io/M3/
@@ -24,8 +27,10 @@ function headMeta(): Plugin {
       { tag: 'meta', attrs: { property: 'og:image', content: `${SITE_URL}og.png` }, injectTo: 'head' },
       { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' }, injectTo: 'head' },
       { tag: 'meta', attrs: { property: 'og:image:height', content: '630' }, injectTo: 'head' },
+      { tag: 'meta', attrs: { property: 'og:image:alt', content: t('og.alt') }, injectTo: 'head' },
       { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' }, injectTo: 'head' },
       { tag: 'meta', attrs: { name: 'twitter:image', content: `${SITE_URL}og.png` }, injectTo: 'head' },
+      { tag: 'meta', attrs: { name: 'twitter:image:alt', content: t('og.alt') }, injectTo: 'head' },
     ],
   }
 }
@@ -56,11 +61,26 @@ function productionHtml(): Plugin {
   }
 }
 
+// The stills, card art and OG image are rendered from the model (npm run render:assets) and stamped
+// with a hash of config.ts. Warn at build time when config.ts has changed since they were rendered.
+function staleAssets(): Plugin {
+  return {
+    name: 'm3-stale-assets',
+    apply: 'build',
+    buildStart() {
+      const manifest = 'public/stills/manifest.json'
+      const hash = createHash('sha256').update(readFileSync('src/model/config.ts')).digest('hex').slice(0, 16)
+      const stamped = existsSync(manifest) ? (JSON.parse(readFileSync(manifest, 'utf8')) as { configHash?: string }).configHash : undefined
+      if (stamped !== hash) this.warn('Rendered stills and OG image are stale (config.ts changed). Run: npm run render:assets && npm run export:glb')
+    },
+  }
+}
+
 export default defineConfig({
   base: '/M3/',
   server: { port: 5173, strictPort: true },
   preview: { port: 4173, strictPort: true },
-  plugins: [injectContent(), headMeta(), productionHtml()],
+  plugins: [injectContent(), headMeta(), productionHtml(), staleAssets()],
   // three.js is one lazy chunk (~150 kB gzipped) loaded after first paint.
   build: { chunkSizeWarningLimit: 700 },
 })

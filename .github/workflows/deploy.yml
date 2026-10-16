@@ -1,0 +1,78 @@
+# Builds the m³ page and deploys it to GitHub Pages: https://carterbkeeling.github.io/M3/
+# Adapted from Vite's official GitHub Pages workflow (https://vite.dev/guide/static-deploy#github-pages),
+# split into build and deploy jobs so each job gets only the permissions it uses.
+#
+# One-time setup, BEFORE the first push: Settings → Pages → Build and deployment → Source: GitHub Actions.
+#
+# Third-party actions are pinned to full commit SHAs (the tag each SHA was resolved from is in the comment;
+# verified against the GitHub API on 2026-10-15). No secrets are used.
+name: Deploy to GitHub Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ['main']
+  # Allows a manual run from the Actions tab
+  workflow_dispatch:
+
+# Least privilege: nothing by default; each job asks for what it needs.
+# Across the workflow that is contents: read, pages: write and id-token: write.
+permissions: {}
+
+# One deployment at a time. A new run queues behind one in progress instead of cancelling it.
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # check out the repository
+      pages: read # configure-pages reads the Pages site settings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false # nothing in this job pushes
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # No dependency needs an install script (checked 2026-10-15), so none are allowed to run.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # Fails if any page string is still DRAFT in COPY-REVIEW (nothing ships unapproved).
+      - name: Check copy
+        run: npm run check:copy
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write # create the Pages deployment
+      id-token: write # OIDC token that proves the deployment comes from this workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

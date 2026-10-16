@@ -11,8 +11,15 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test tests/e2e",
+    "check:copy": "node scripts/copy-review.ts --final",
+    "copy:review": "node scripts/copy-review.ts",
     "capture:blockout": "playwright test tests/capture/blockout.spec.ts",
-    "capture:reference": "playwright test tests/capture/reference.spec.ts"
+    "capture:reference": "playwright test tests/capture/reference.spec.ts",
+    "capture:page": "playwright test tests/capture/page.spec.ts",
+    "render:assets": "playwright test tests/capture/assets.spec.ts",
+    "export:glb": "playwright test tests/capture/export-glb.spec.ts",
+    "lh": "node scripts/lighthouse.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
@@ -22,9 +29,11 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.2",
     "@types/three": "^0.186.0",
+    "lighthouse": "^13.5.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.5"

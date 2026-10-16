@@ -6,14 +6,25 @@ import { config } from '../src/model/config.ts'
 import { expandBlocks } from '../src/content/blocks.ts'
 import { GALLERY_LABELS } from '../src/content/specs.ts'
 import { WORDMARK_LABEL } from '../src/brand/wordmark.ts'
+import { COPY } from '../src/content/copy.ts'
 
-type Status = 'draft' | 'truth' | 'ui'
+// Approvals of generated strings (index.html strings carry <!-- APPROVED date --> markers instead).
+const APPROVED: Record<string, string> = {
+  'gallery.full': '2026-10-15',
+  'gallery.returned': '2026-10-15',
+  'gallery.srhint': '2026-10-15',
+  'js.cta.title': '2026-10-15',
+  ...Object.fromEntries(config.modules.map((_, i) => [`placard.${i}`, '2026-10-15'])),
+}
+
+type Status = 'draft' | 'approved' | 'truth' | 'ui'
 interface Entry {
   id: string
   text: string
   status: Status
   source: string
   where: string
+  approved?: string
 }
 
 // What each non-draft line rests on: a Product truth line (PT), the brief, or a recorded decision.
@@ -156,12 +167,15 @@ while ((m = re.exec(html))) {
       }
     }
   }
-  const draft = /^\s*<!-- DRAFT -->/.test(html.slice(after, after + 40))
+  const marker = /^\s*<!-- (DRAFT|APPROVED ([0-9-]+)) -->/.exec(html.slice(after, after + 48))
+  const draft = !!marker
+  const approvedOn = marker?.[2]
   const isUi = id.startsWith('ui.') || id === 'nav.menu'
   entries.push({
     id,
     text,
-    status: draft ? 'draft' : isUi ? 'ui' : 'truth',
+    status: draft ? (approvedOn ? 'approved' : 'draft') : isUi ? 'ui' : 'truth',
+    approved: approvedOn,
     source: draft ? (DRAFT_NOTES[id] ?? '') : isUi ? 'UI label' : (SOURCES[id] ?? ''),
     where: id.startsWith('spec.') ? lineIn('src/content/specs.ts', `id: '${id.slice(5)}'`) : `index.html:${lineOf(m.index)}`,
   })
@@ -196,6 +210,12 @@ const ui: Array<[string, string, string]> = [
   ['ui.tbd', 'TBD (read as "to be determined")', lineIn('src/content/specs.ts', 'to be determined')],
 ]
 for (const [id, text, where] of ui) entries.push({ id, text, status: 'ui', source: 'UI / accessibility label', where })
+for (const e of entries) if (e.status === 'draft' && APPROVED[e.id]) Object.assign(e, { status: 'approved', approved: APPROVED[e.id] })
+// Runtime strings from src/content/copy.ts
+for (const [id, c] of Object.entries(COPY)) {
+  const approvedOn = (c as { approved?: string }).approved
+  entries.push({ id, text: c.text, status: c.status, source: c.note, where: lineIn('src/content/copy.ts', `'${id}'`), approved: approvedOn })
+}
 
 const missingSource = entries.filter((e) => e.status === 'truth' && !e.source)
 const emptyText = entries.filter((e) => !e.text)
@@ -203,6 +223,8 @@ const emptyText = entries.filter((e) => !e.text)
 const cell = (s: string) => s.replace(/\|/g, '\\|')
 const row = (e: Entry) => `| \`${e.id}\` | ${cell(e.text)} | ${cell(e.source)} | ${e.where} |`
 const drafts = entries.filter((e) => e.status === 'draft')
+const approved = entries.filter((e) => e.status === 'approved')
+const arow = (e: Entry) => `| \`${e.id}\` | ${cell(e.text)} | ${e.approved ?? ''} | ${cell(e.source)} | ${e.where} |`
 const truths = entries.filter((e) => e.status === 'truth')
 const uis = entries.filter((e) => e.status === 'ui')
 
@@ -214,9 +236,10 @@ Do not edit by hand: change the source, then regenerate.
 - **Draft** lines go beyond Product truth. Each is marked \`<!-- DRAFT -->\` in source (or listed here when generated) and needs your approval or a rewrite.
 - **Truth** lines paraphrase Product truth, the brief, or a recorded decision. Please check each paraphrase against its source.
 - **UI** strings are interface and accessibility labels with no claims.
-- Once a line is approved, Phase 3 marks it approved; at sign-off no draft may remain.
+- **Approved** lines were draft and are approved as written (marker \`<!-- APPROVED date -->\`).
+- \`node scripts/copy-review.ts --final\` fails while any draft remains: nothing ships unapproved.
 
-**Totals:** ${drafts.length} draft · ${truths.length} truth/decision · ${uis.length} UI${missingSource.length ? ` · ⚠ ${missingSource.length} truth lines missing a source` : ''}
+**Totals:** ${drafts.length} draft · ${approved.length} approved · ${truths.length} truth/decision · ${uis.length} UI${missingSource.length ? ` · ⚠ ${missingSource.length} truth lines missing a source` : ''}
 
 ## Draft lines (need approval)
 
@@ -224,7 +247,13 @@ Do not edit by hand: change the source, then regenerate.
 |---|---|---|---|
 ${drafts.map(row).join('\n')}
 
-## Alternatives offered
+## Approved lines
+
+| ID | Text | Approved | Notes | Where |
+|---|---|---|---|---|
+${approved.map(arow).join('\n')}
+
+## Alternatives offered (not used)
 
 | For | Current | Alternative(s) |
 |---|---|---|
@@ -244,15 +273,16 @@ ${truths.map(row).join('\n')}
 | ID | Text | Kind | Where |
 |---|---|---|---|
 ${uis.map(row).join('\n')}
-
-## Not on the page yet
-- Module and scene stills, OG image alt text: Phase 3.
-- Light-state captions and aria-live announcements ("no module" / "plugged in" / "unlocked"): Phase 3 (draft).
 `
 
 writeFileSync('COPY-REVIEW.md', md)
-console.log(`COPY-REVIEW.md: ${drafts.length} draft, ${truths.length} truth/decision, ${uis.length} UI, ${missingSource.length} missing source, ${emptyText.length} empty`)
-if (process.argv.includes('--check') && (missingSource.length || emptyText.length)) {
+console.log(`COPY-REVIEW.md: ${drafts.length} draft, ${approved.length} approved, ${truths.length} truth/decision, ${uis.length} UI, ${missingSource.length} missing source, ${emptyText.length} empty`)
+if (process.argv.includes('--final') && drafts.length) {
+  console.error(`${drafts.length} draft line(s) still need approval:`)
+  for (const e of drafts) console.error(`  ${e.id} (${e.where})`)
+  process.exit(1)
+}
+if ((process.argv.includes('--check') || process.argv.includes('--final')) && (missingSource.length || emptyText.length)) {
   for (const e of [...missingSource, ...emptyText]) console.error(`  ${e.id} (${e.where})`)
   process.exit(1)
 }

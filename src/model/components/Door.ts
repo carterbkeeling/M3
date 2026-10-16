@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { MachineConfig } from '../config.ts'
 import type { MachineMaterials } from '../materials.ts'
+import { cached, keyOf } from '../geometryCache.ts'
 import { roundedSlab } from '../shapes.ts'
 import { buildLock, type LockParts } from './Lock.ts'
 import { buildPlacard, type PlacardParts } from './Placard.ts'
@@ -33,7 +34,9 @@ export function buildDoor(cfg: MachineConfig, slotW: number, slotH: number, m: M
   pivot.name = 'DoorPivot'
   const leaf = new THREE.Group()
   leaf.name = 'Door'
-  const knuckle = new THREE.CylinderGeometry(KNUCKLE_R, KNUCKLE_R, 0.036, 16)
+  // Every door is the same size, so all of them share these geometries.
+  const k = (name: string) => keyOf(name, dw, dh, t, r, b)
+  const knuckle = cached('door.knuckle', () => new THREE.CylinderGeometry(KNUCKLE_R, KNUCKLE_R, 0.036, 16))
   const placard = buildPlacard(style === 'side' ? Math.min(0.24, dw - 0.15) : Math.min(0.26, dw - 0.1), 0.085, m)
   const lock = buildLock(m)
 
@@ -42,9 +45,9 @@ export function buildDoor(cfg: MachineConfig, slotW: number, slotH: number, m: M
     leaf.position.set(dw / 2, 0, 0)
     // Finger pocket: a stadium cut through the face skin with a recessed floor behind it.
     const pocket = { w: 0.026, h: 0.13, r: 0.013, cx: dw / 2 - 0.036, cy: 0 }
-    const slab = new THREE.Mesh(roundedSlab(dw, dh, t, r, b, [pocket]), m.door)
+    const slab = new THREE.Mesh(cached(k('door.side.slab'), () => roundedSlab(dw, dh, t, r, b, [pocket])), m.door)
     slab.position.z = -t
-    const floor = new THREE.Mesh(roundedSlab(pocket.w + 0.01, pocket.h + 0.01, 0.006, pocket.r + 0.005, 0.002), m.door)
+    const floor = new THREE.Mesh(cached('door.side.pocket', () => roundedSlab(pocket.w + 0.01, pocket.h + 0.01, 0.006, pocket.r + 0.005, 0.002)), m.door)
     floor.position.set(pocket.cx, pocket.cy, -0.014)
     leaf.add(slab, floor)
     for (const y of [dh / 2 - 0.04, -dh / 2 + 0.04]) {
@@ -61,9 +64,9 @@ export function buildDoor(cfg: MachineConfig, slotW: number, slotH: number, m: M
     // Full-width recessed lip: the top strip of the door steps back 12 mm.
     const lipH = 0.026
     const lipD = 0.012
-    const body = new THREE.Mesh(roundedSlab(dw, dh - lipH, t, r, b), m.door)
+    const body = new THREE.Mesh(cached(k('door.drop.body'), () => roundedSlab(dw, dh - lipH, t, r, b)), m.door)
     body.position.set(0, -lipH / 2, -t)
-    const lip = new THREE.Mesh(roundedSlab(dw, lipH + r, t - lipD, r, b), m.door)
+    const lip = new THREE.Mesh(cached(k('door.drop.lip'), () => roundedSlab(dw, lipH + r, t - lipD, r, b)), m.door)
     lip.position.set(0, dh / 2 - (lipH + r) / 2, -t)
     leaf.add(body, lip)
     for (const x of [dw / 2 - 0.06, -dw / 2 + 0.06]) {

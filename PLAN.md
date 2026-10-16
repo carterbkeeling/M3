@@ -53,6 +53,20 @@ These supersede anything above or below that conflicts.
 | P6 | Wordmark | **Slot** (`src/brand/wordmark.ts` → `wordmark`). A square m with one radius throughout and a superscript ³. Its loader draws the m, then the ³ (one pen lift). This differs from the brief's "draws itself as a single stroke"; you accepted it by choosing Slot. |
 | P7 | Light states | Brightness only (one accent): dim = no module, steady = plugged in, bright = unlocked. The reader ring is its own light (it pulses on a tap in the unlock scene). |
 
+### Phase 3 decisions (2026-10-15, for approval at the Phase 3 checkpoint)
+These supersede anything above that conflicts, once approved.
+
+| # | Decision | Answer |
+|---|---|---|
+| Q1 | Reduced motion in the scroll scenes | **Pins stay; scrubbing is off.** Pinned content doesn't move, so the scene sections stay pinned, but each beat is a held framing that switches by an instant cut as you scroll, and the progress rail steps per beat. (Above, the plan said pins would be off too.) |
+| Q2 | Where the machine is free to drive | **Hero and Built simple** (the parked views): drag to turn, door hotspots, rotate buttons. The scroll scenes (How it works, Modular, Connected) are scroll-driven only. |
+| Q3 | Doors in the free views | **One open at a time.** Stepping another door closes the previous one. |
+| Q4 | Spec sheet handoff | **Dolly-zoom** from the normal 24° view to about 2°, registered to the drawing the whole way, then the orthographic camera. The dimension lines draw in as the drawing rises; leaving, the drawing's outline fades back in as the machine fades out. |
+| Q5 | Phones and tablets | Coarse-pointer devices get the standard material tier (same colors and grain, no clearcoat or sheen) to keep frame times down. |
+| Q6 | Intro loader | Once per browser session, at most 1.2 s, skippable by any key, click or scroll; the page behind it is inert while it runs. Reduced motion: the static mark, then a 200 ms fade. |
+| Q7 | Gallery card art | One rendered module (full, and returned with its door open and stock part-used), decorative; the placard text on each card is real DOM text. |
+| Q8 | Deploy hardening | CI installs with `npm ci --ignore-scripts` (no dependency needs an install script). |
+
 ---
 
 ## Assumptions
@@ -261,7 +275,7 @@ One persistent canvas. Each section declares a framing, and GSAP ScrollTrigger t
 | Hero (a) | none | idle drift + cursor tilt; drag to rotate on the hit layer (yaw ±35°, small pitch) |
 | Idea | none | the machine parks small at the right (desktop) or top (phone); text reveals once |
 | How it works (d) | ~250 vh / ~150 vh, snap per beat | Load: the camera isolates a module being filled → Swap: the used module slides out, the full one slides in, its segment lights, other slots cascade → Count: the returned module alone opens to show reduced contents, with RMA and invoice chips |
-| Modular (c) | ~150 vh / ~100 vh | a module slides out → fitment highlight → shell parts separate → reassemble → gallery |
+| Modular (c) | ~150 vh / ~100 vh | a module slides out and lifts clear → the machine turns nearly face-on as the fitment rails and connector highlight → it turns back as the shell parts separate → reassemble → gallery |
 | Connected (b) | ~150 vh / ~100 vh | a badge approaches the reader → ring pulse → the slot's segment pulses → the door swings open → a hold with the three function labels |
 | Built simple | none | rests at three-quarter view; light rakes across the edge radii |
 | Background | none | the machine fades out |

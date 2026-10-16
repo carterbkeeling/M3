@@ -28,10 +28,17 @@ const desktopBase: Table = {
   built: { yaw: 0.62, pitch: 0.14, dist: 5.6, lookY: 0.92, screenX: -0.22, screenY: 0, opacity: 1 },
   specs: { yaw: 0, pitch: 0, dist: 7, lookY: 0.92, screenX: -0.25, screenY: 0, opacity: 1 },
 }
+// The free views (hero, Built simple) sit a little smaller and higher on desktop, so the turn controls
+// fit just under the machine, down to 720 px tall, instead of over its plinth. (Phones place the
+// controls on the plinth, so they keep the base framing.)
+const desktopTop: Framing = { ...desktopBase.top, dist: 5.9, screenY: 0.04 }
+const desktopBuilt: Framing = { ...desktopBase.built, dist: 5.9, screenY: 0.035 }
 const desktop: Table = {
   ...desktopBase,
+  top: desktopTop,
+  built: desktopBuilt,
   gallery: hidden(desktopBase.modular),
-  background: hidden(desktopBase.built),
+  background: hidden(desktopBuilt),
   contact: hidden(desktopBase.specs),
 }
 
@@ -49,6 +56,17 @@ const mobile: Table = {
   gallery: hidden(mobileBase.modular),
   background: hidden(mobileBase.built),
   contact: hidden(mobileBase.specs),
+}
+
+// While a door stands open in a free view, the machine turns to face the visitor (all but square: a
+// sliver of the right side keeps the pulled module's depth readable) and moves a little further from
+// the copy (desktop only: on phones it is centered, so it stays put). The open door and the pulled
+// module then come out toward the camera instead of across the hero wordmark. k: how far into that
+// pose it is (0 → 1).
+const PRESENT = { yaw: -0.1, shift: 0.06 }
+export function presentFraming(f: Framing, k: number): Framing {
+  if (k <= 0) return f
+  return { ...f, yaw: f.yaw + (PRESENT.yaw - f.yaw) * k, screenX: f.screenX + Math.sign(f.screenX) * PRESENT.shift * k }
 }
 
 export function framingFor(id: string, isMobile: boolean): Framing {
