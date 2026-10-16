@@ -53,8 +53,8 @@ These supersede anything above or below that conflicts.
 | P6 | Wordmark | **Slot** (`src/brand/wordmark.ts` → `wordmark`). A square m with one radius throughout and a superscript ³. Its loader draws the m, then the ³ (one pen lift). This differs from the brief's "draws itself as a single stroke"; you accepted it by choosing Slot. |
 | P7 | Light states | Brightness only (one accent): dim = no module, steady = plugged in, bright = unlocked. The reader ring is its own light (it pulses on a tap in the unlock scene). |
 
-### Phase 3 decisions (2026-10-15, for approval at the Phase 3 checkpoint)
-These supersede anything above that conflicts, once approved.
+### Phase 3 decisions (approved 2026-10-16)
+These supersede anything above that conflicts.
 
 | # | Decision | Answer |
 |---|---|---|

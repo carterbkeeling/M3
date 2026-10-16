@@ -9,29 +9,13 @@ Do not edit by hand: change the source, then regenerate.
 - **Approved** lines were draft and are approved as written (marker `<!-- APPROVED date -->`).
 - `node scripts/copy-review.ts --final` fails while any draft remains: nothing ships unapproved.
 
-**Totals:** 17 draft · 34 approved · 69 truth/decision · 13 UI
+**Totals:** 0 draft · 51 approved · 69 truth/decision · 13 UI
 
 ## Draft lines (need approval)
 
 | ID | Text | Why it's draft / notes | Where |
 |---|---|---|---|
-| `light.none` | no module | Light-state word (Decision A / P7). | src/content/copy.ts:14 |
-| `light.plugged` | plugged in | Light-state word (PT "plugged-in status"). | src/content/copy.ts:15 |
-| `light.unlocked` | unlocked | Light-state word (Decision A / P7). | src/content/copy.ts:16 |
-| `hotspot.label` | {product}, door {n}: {state} | Accessible name of each door hotspot button. | src/content/copy.ts:18 |
-| `hotspot.action.unlock` | Unlock and open | Door cycle step 1 (demo of tap-to-unlock). | src/content/copy.ts:19 |
-| `hotspot.action.pull` | Pull the module out | Door cycle step 2 (shows the fitment). | src/content/copy.ts:20 |
-| `hotspot.action.close` | Put it back and close | Door cycle step 3. | src/content/copy.ts:21 |
-| `announce.unlocked` | {product}: unlocked, door open. | aria-live announcement. | src/content/copy.ts:22 |
-| `announce.pulled` | {product}: module pulled out. The slot's fitment is visible. | aria-live announcement. | src/content/copy.ts:23 |
-| `announce.closed` | {product}: back in its slot, door closed, plugged in. | aria-live announcement. | src/content/copy.ts:24 |
-| `announce.reset` | Doors closed and view reset. | aria-live announcement after Esc, or on leaving an interactive view, when a door was open. | src/content/copy.ts:25 |
-| `controls.hint` | Drag to turn · tap a door | Microcopy hint on the interactive views. | src/content/copy.ts:28 |
-| `still.hero` | The m³ machine at a three-quarter view: a dark cabinet with a grid of doors and a cyan light line down the center. | Alt text for the hero still (no-WebGL). | src/content/copy.ts:34 |
-| `still.swap` | A closed module sliding out of its slot while the rest of the machine stays closed. | Alt text for the swap still. | src/content/copy.ts:35 |
-| `still.exploded` | A module lifted clear of its slot, the empty slot's fitment lit, and the cabinet's front frame, back, shell and base pulled apart. | Alt text for the exploded still. | src/content/copy.ts:36 |
-| `still.unlock` | A badge held to the reader in the middle of the light line, and one door open on its module. | Alt text for the unlock still. | src/content/copy.ts:37 |
-| `og.alt` | m³, a modular vending machine, shown at a three-quarter view. | Open Graph image alt text. | src/content/copy.ts:38 |
+
 
 ## Approved lines
 
@@ -71,6 +55,23 @@ Do not edit by hand: change the source, then regenerate.
 | `gallery.returned` | Returned to the warehouse | 2026-10-15 | Card state label (Decision B: consumption shown only at the warehouse). | src/content/specs.ts:61 |
 | `gallery.srhint` | , show returned | 2026-10-15 | Screen-reader hint after each card name. | src/content/specs.ts:61 |
 | `js.cta.title` | Contact email to be announced | 2026-10-15 | Tooltip on the CTA while the address is TBD. | src/main.ts:95 |
+| `light.none` | no module | 2026-10-16 | Light-state word (Decision A / P7). | src/content/copy.ts:14 |
+| `light.plugged` | plugged in | 2026-10-16 | Light-state word (PT "plugged-in status"). | src/content/copy.ts:15 |
+| `light.unlocked` | unlocked | 2026-10-16 | Light-state word (Decision A / P7). | src/content/copy.ts:16 |
+| `hotspot.label` | {product}, door {n}: {state} | 2026-10-16 | Accessible name of each door hotspot button. | src/content/copy.ts:18 |
+| `hotspot.action.unlock` | Unlock and open | 2026-10-16 | Door cycle step 1 (demo of tap-to-unlock). | src/content/copy.ts:19 |
+| `hotspot.action.pull` | Pull the module out | 2026-10-16 | Door cycle step 2 (shows the fitment). | src/content/copy.ts:20 |
+| `hotspot.action.close` | Put it back and close | 2026-10-16 | Door cycle step 3. | src/content/copy.ts:21 |
+| `announce.unlocked` | {product}: unlocked, door open. | 2026-10-16 | aria-live announcement. | src/content/copy.ts:22 |
+| `announce.pulled` | {product}: module pulled out. The slot's fitment is visible. | 2026-10-16 | aria-live announcement. | src/content/copy.ts:23 |
+| `announce.closed` | {product}: back in its slot, door closed, plugged in. | 2026-10-16 | aria-live announcement. | src/content/copy.ts:24 |
+| `announce.reset` | Doors closed and view reset. | 2026-10-16 | aria-live announcement after Esc, or on leaving an interactive view, when a door was open. | src/content/copy.ts:25 |
+| `controls.hint` | Drag to turn · tap a door | 2026-10-16 | Microcopy hint on the interactive views. | src/content/copy.ts:28 |
+| `still.hero` | The m³ machine at a three-quarter view: a dark cabinet with a grid of doors and a cyan light line down the center. | 2026-10-16 | Alt text for the hero still (no-WebGL). | src/content/copy.ts:34 |
+| `still.swap` | A closed module sliding out of its slot while the rest of the machine stays closed. | 2026-10-16 | Alt text for the swap still. | src/content/copy.ts:35 |
+| `still.exploded` | A module lifted clear of its slot, the empty slot's fitment lit, and the cabinet's front frame, back, shell and base pulled apart. | 2026-10-16 | Alt text for the exploded still. | src/content/copy.ts:36 |
+| `still.unlock` | A badge held to the reader in the middle of the light line, and one door open on its module. | 2026-10-16 | Alt text for the unlock still. | src/content/copy.ts:37 |
+| `og.alt` | m³, a modular vending machine, shown at a three-quarter view. | 2026-10-16 | Open Graph image alt text. | src/content/copy.ts:38 |
 
 ## Alternatives offered (not used)
 

@@ -144,5 +144,5 @@ The base path `/M3/` is set in `vite.config.ts`, and the absolute share and cano
 - **Warranty:** the spec row is TBD.
 - **Confirmed final dimensions:** currently ≈ 72 × 39 × 35 in · 1.83 × 0.99 × 0.89 m, marked approximate and computed from `config.ts`.
 - **Placard quantities:** illustrative; the page says so.
-- **Repo owner and visibility:** to be confirmed before the first push (assumed public `carterbkeeling/M3`). This includes whether PLAN.md, COPY-REVIEW.md and `docs/checkpoints/` stay in the pushed branch.
+- **Repo owner and visibility:** *resolved.* Public `carterbkeeling/M3`, published with PLAN.md, COPY-REVIEW.md and `docs/checkpoints/`.
 - **Reader reach height:** *resolved.* The reader moved mid-spine to the rail nearest the grid's mid-height, ≈ 35 in on the default 2 × 6, inside the 15–48 in reach range.

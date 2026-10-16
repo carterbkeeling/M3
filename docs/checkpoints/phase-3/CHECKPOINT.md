@@ -35,11 +35,12 @@ Three reviewers covered code, accessibility and visuals and claims. A skeptic co
 - The divider is no longer clipped. Feet are added to the elevation. The drawing's outline crossfades back in as the machine leaves the spec sheet.
 - `prefers-contrast: more` is supported, and `og:image:alt` is emitted.
 
-## For your approval
+## Approved (2026-10-16)
 
 - **Phase 3 decisions Q1–Q8** in `PLAN.md`.
-- **17 draft strings** in `COPY-REVIEW.md` (all in `src/content/copy.ts`: light-state words, hotspot labels and actions, live announcements, the controls hint, the no-WebGL alt text and the OG alt text). `npm run check:copy` (run by the deploy workflow) fails until they are approved.
+- **17 strings** in `src/content/copy.ts` (light-state words, hotspot labels and actions, live announcements, the controls hint, the no-WebGL alt text and the OG alt text). `COPY-REVIEW.md` now has 0 drafts, and `npm run check:copy` passes.
+- **Publishing:** public repo `carterbkeeling/M3`, pushed as-is (PLAN.md, COPY-REVIEW.md and `docs/checkpoints/` included), after a security scan.
 
 ## Open TBD list
 
-See the README's "Open TBD list": contact email, power input, connectivity type, resin, weight, module capacity, warranty, confirmed final dimensions, and the repo owner and visibility before the first push.
+See the README's "Open TBD list": contact email, power input, connectivity type, resin, weight, module capacity, warranty and confirmed final dimensions.
